@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Zip Modifier</title>
+</head>
+<body>
+    <h1>Upload a Zip File</h1>
+    <input type="file" id="zipFileInput" accept=".zip">
+    <button onclick="uploadZip()">Upload and Modify Zip</button>
+
+    <h1>Download Modified Zip</h1>
+    <button id="downloadButton" style="display:none;" onclick="downloadZip()">Download Zip</button>
+
+    <script>
+        function uploadZip() {
+            const input = document.getElementById('zipFileInput');
+            if (input.files.length > 0) {
+                const file = input.files[0];
+                const formData = new FormData();
+                formData.append("zipfile", file);
+
+                fetch('/upload', {
+                    method: 'POST',
+                    body: formData,
+                }).then(response => response.blob())
+                  .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = 'modified.zip';
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    alert('File ready to be downloaded!');
+                  })
+                  .catch(error => alert('Error modifying zip file: ' + error));
+            } else {
+                alert('Please select a zip file.');
+            }
+        }
+
+        function downloadZip() {
+            window.location.href = '/download';
+        }
+    </script>
+</body>
+</html>
