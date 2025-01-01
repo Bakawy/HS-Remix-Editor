@@ -181,8 +181,17 @@
         const file = event.target.files[0];
         if (file) {
             const videoElement = document.getElementById('videoPreview');
+            const widthInput = document.getElementById('resolutionWidth');
+            const heightInput = document.getElementById('resolutionHeight');
             videoElement.src = URL.createObjectURL(file);
             videoElement.load();
+            videoElement.addEventListener( "loadedmetadata", function () {
+                // retrieve dimensions
+                widthInput.placeholder = this.videoWidth;
+                heightInput.placeholder  = this.videoHeight;
+
+            }, false);
+
         }
     });
     document.getElementById('applyChangesButton').addEventListener('click', async () => {
