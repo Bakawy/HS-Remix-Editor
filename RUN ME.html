@@ -2,48 +2,142 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Zip Modifier</title>
+<title>Modify and Download RIQ Files</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<style>
+    /* Simple styling to arrange content side-by-side */
+    .container {
+        display: flex;
+        justify-content: space-between;
+    }
+    .options {
+        width: 30%;
+        padding: 20px;
+        border: 1px solid #ccc;
+    }
+    .upload {
+        width: 65%;
+        padding: 20px;
+    }
+</style>
 </head>
 <body>
-    <h1>Upload a Zip File</h1>
-    <input type="file" id="zipFileInput" accept=".zip">
-    <button onclick="uploadZip()">Upload and Modify Zip</button>
+<div class="container">
+    <div class="upload">
+        <h1>Upload and Modify a .RIQ File</h1>
+        <input type="file" id="riqFileInput" accept=".riq">
+        <button onclick="loadAndModifyRIQ()">Load and Modify File</button>
+        <h2>Download Modified File</h2>
+        <button id="downloadButton" style="display:none;" onclick="downloadModifiedRIQ()">Download Modified .RIQ</button>
+    </div>
+    <div class="options">
+        <h2>Options</h2>
+        <label for="trackNumber">Track Number:</label>
+        <span id="trackNumberValue">1</span>
+        <input type="range" id="trackNumber" min="1" max="10" step="1" value="1"><br><br>
+        <label for="pitchShift">pitchShift:</label>
+        <span id="pitchShiftValue">0</span>
+        <input type="range" id="pitchShift" min="-30" max="30" step="1" value="0"><br><br>
+        <label for="beatOffset">Beat Offset:</label>
+        <input type="number" id="beatOffset" value="1"><br><br>
+        <label for="msOffset">Milisecond Offset (based on initial bpm):</label>
+        <input type="number" id="msOffset" value="0">
+    </div>
+</div>
 
-    <h1>Download Modified Zip</h1>
-    <button id="downloadButton" style="display:none;" onclick="downloadZip()">Download Zip</button>
+<script>
+    let modifiedContent = null; // This will hold the modified blob
+    let fileName = "";
+    let trackNumber;
+    let pitchShift;
+    let beatOffset;
+    let msOffset;
 
-    <script>
-        function uploadZip() {
-            const input = document.getElementById('zipFileInput');
-            if (input.files.length > 0) {
-                const file = input.files[0];
-                const formData = new FormData();
-                formData.append("zipfile", file);
+    document.getElementById('trackNumber').oninput = function() {
+        document.getElementById('trackNumberValue').textContent = this.value;
+    };
+    document.getElementById('pitchShift').oninput = function() {
+        document.getElementById('pitchShiftValue').textContent = this.value;
+    };
 
-                fetch('/upload', {
-                    method: 'POST',
-                    body: formData,
-                }).then(response => response.blob())
-                  .then(blob => {
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.style.display = 'none';
-                    a.href = url;
-                    a.download = 'modified.zip';
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                    alert('File ready to be downloaded!');
-                  })
-                  .catch(error => alert('Error modifying zip file: ' + error));
-            } else {
-                alert('Please select a zip file.');
-            }
+    function modifyRemix(remix) {
+            const True = true
+            const False = false
+            const bpm = remix["tempoChanges"][0]["dynamicData"]["tempo"]
+            const bo = parseFloat(beatOffset)
+            const mo = parseFloat(msOffset)
+            const tn = parseInt(trackNumber) - 1
+            const ps = parseInt(pitchShift)
+            remix["entities"] = remix["entities"].concat([
+                {'type': 'riq__Entity', 'version': 0, 'datamodel': 'advanced/play sfx', 'beat': 0.0 + bo + (mo / 1000) / (60 / bpm), 'length': 0.25, 'dynamicData': {'track': tn, 'game': {'value': 39, 'Values': ['common', 'airboarder', 'airRally', 'animalAcrobat', 'balloonHunter', 'basketballGirls', 'bigRockFinish', 'blueBear', 'boardMeeting', 'bonOdori', 'bouncyRoad', 'builtToScaleDS', 'builtToScaleRvl', 'cannery', 'catchOfTheDay', 'catchyTune', 'chameleon', 'chargingChicken', 'cheerReaders', 'clappyTrio', 'clapTrap', 'coinToss', 'cropStomp', 'djSchool', 'dogNinja', 'doubleDate', 'dressYourBest', 'drummerDuel', 'drummingPractice', 'fanClub', 'figureFighter', 'fillbots', 'fireworks', 'firstContact', 'flipperFlop', 'forkLifter', 'freezeFrame', 'frogHop', 'frogPrincess', 'gleeClub', 'holeInOne', 'karateman', 'kitties', 'launchParty', 'lockstep', 'loveLab', 'lumbearjack', 'mannequinFactory', 'manzai', 'marchingOrders', 'meatGrinder', 'monkeyWatch', 'mrUpbeat', 'munchyMonk', 'nailCarpenter', 'nightWalkAgb', 'nipInTheBud', 'octopusMachine', 'packingPests', 'pajamaParty', 'powerCalligraphy', 'quizShow', 'rapMen', 'rhythmRally', 'rhythmSomen', 'rhythmTestGBA', 'rhythmTweezers', 'ringside', 'rockers', 'samuraiSliceNtr', 'seeSaw', 'shootEmUp', 'showtime', 'sickBeats', 'slotMonster', 'sneakySpirits', 'spaceball', 'spaceDance', 'spaceSoccer', 'splashdown', 'sumoBrothers', 'tambourine', 'tapTrial', 'tapTroupe', 'theDazzles', 'tossBoys', 'totemClimb', 'tramAndPauline', 'trickClass', 'tunnel', 'fallingWaffle', 'wizardsWaltz', 'workingDough']}, 'getSfx': 'Glee Club', 'sfxName': {'value': 9, 'Values': ['BatonDown', 'BatonUp', 'LoudWailLoop', 'LoudWailStart', 'StopWail', 'togetherEN-01', 'togetherEN-02', 'togetherEN-03', 'togetherEN-04', 'WailLoop']}, 'useSemitones': True, 'semitones': -6 + ps, 'cents': 0, 'pitch': 1.0, 'volume': 1.0, 'offset': 0, 'loop': True}},
+                {'type': 'riq__Entity', 'version': 0, 'datamodel': 'advanced/play sfx', 'beat': 0.25 + bo + (mo / 1000) / (60 / bpm), 'length': 0.25, 'dynamicData': {'track': tn, 'game': {'value': 39, 'Values': ['common', 'airboarder', 'airRally', 'animalAcrobat', 'balloonHunter', 'basketballGirls', 'bigRockFinish', 'blueBear', 'boardMeeting', 'bonOdori', 'bouncyRoad', 'builtToScaleDS', 'builtToScaleRvl', 'cannery', 'catchOfTheDay', 'catchyTune', 'chameleon', 'chargingChicken', 'cheerReaders', 'clappyTrio', 'clapTrap', 'coinToss', 'cropStomp', 'djSchool', 'dogNinja', 'doubleDate', 'dressYourBest', 'drummerDuel', 'drummingPractice', 'fanClub', 'figureFighter', 'fillbots', 'fireworks', 'firstContact', 'flipperFlop', 'forkLifter', 'freezeFrame', 'frogHop', 'frogPrincess', 'gleeClub', 'holeInOne', 'karateman', 'kitties', 'launchParty', 'lockstep', 'loveLab', 'lumbearjack', 'mannequinFactory', 'manzai', 'marchingOrders', 'meatGrinder', 'monkeyWatch', 'mrUpbeat', 'munchyMonk', 'nailCarpenter', 'nightWalkAgb', 'nipInTheBud', 'octopusMachine', 'packingPests', 'pajamaParty', 'powerCalligraphy', 'quizShow', 'rapMen', 'rhythmRally', 'rhythmSomen', 'rhythmTestGBA', 'rhythmTweezers', 'ringside', 'rockers', 'samuraiSliceNtr', 'seeSaw', 'shootEmUp', 'showtime', 'sickBeats', 'slotMonster', 'sneakySpirits', 'spaceball', 'spaceDance', 'spaceSoccer', 'splashdown', 'sumoBrothers', 'tambourine', 'tapTrial', 'tapTroupe', 'theDazzles', 'tossBoys', 'totemClimb', 'tramAndPauline', 'trickClass', 'tunnel', 'fallingWaffle', 'wizardsWaltz', 'workingDough']}, 'getSfx': 'Glee Club', 'sfxName': {'value': 9, 'Values': ['BatonDown', 'BatonUp', 'LoudWailLoop', 'LoudWailStart', 'StopWail', 'togetherEN-01', 'togetherEN-02', 'togetherEN-03', 'togetherEN-04', 'WailLoop']}, 'useSemitones': True, 'semitones': -6 + ps, 'cents': 0, 'pitch': 1.0, 'volume': 1.0, 'offset': 0, 'loop': True}},
+                {'type': 'riq__Entity', 'version': 0, 'datamodel': 'advanced/play sfx', 'beat': 0.5 + bo + (mo / 1000) / (60 / bpm), 'length': 0.5, 'dynamicData': {'track': tn, 'game': {'value': 39, 'Values': ['common', 'airboarder', 'airRally', 'animalAcrobat', 'balloonHunter', 'basketballGirls', 'bigRockFinish', 'blueBear', 'boardMeeting', 'bonOdori', 'bouncyRoad', 'builtToScaleDS', 'builtToScaleRvl', 'cannery', 'catchOfTheDay', 'catchyTune', 'chameleon', 'chargingChicken', 'cheerReaders', 'clappyTrio', 'clapTrap', 'coinToss', 'cropStomp', 'djSchool', 'dogNinja', 'doubleDate', 'dressYourBest', 'drummerDuel', 'drummingPractice', 'fanClub', 'figureFighter', 'fillbots', 'fireworks', 'firstContact', 'flipperFlop', 'forkLifter', 'freezeFrame', 'frogHop', 'frogPrincess', 'gleeClub', 'holeInOne', 'karateman', 'kitties', 'launchParty', 'lockstep', 'loveLab', 'lumbearjack', 'mannequinFactory', 'manzai', 'marchingOrders', 'meatGrinder', 'monkeyWatch', 'mrUpbeat', 'munchyMonk', 'nailCarpenter', 'nightWalkAgb', 'nipInTheBud', 'octopusMachine', 'packingPests', 'pajamaParty', 'powerCalligraphy', 'quizShow', 'rapMen', 'rhythmRally', 'rhythmSomen', 'rhythmTestGBA', 'rhythmTweezers', 'ringside', 'rockers', 'samuraiSliceNtr', 'seeSaw', 'shootEmUp', 'showtime', 'sickBeats', 'slotMonster', 'sneakySpirits', 'spaceball', 'spaceDance', 'spaceSoccer', 'splashdown', 'sumoBrothers', 'tambourine', 'tapTrial', 'tapTroupe', 'theDazzles', 'tossBoys', 'totemClimb', 'tramAndPauline', 'trickClass', 'tunnel', 'fallingWaffle', 'wizardsWaltz', 'workingDough']}, 'getSfx': 'Glee Club', 'sfxName': {'value': 9, 'Values': ['BatonDown', 'BatonUp', 'LoudWailLoop', 'LoudWailStart', 'StopWail', 'togetherEN-01', 'togetherEN-02', 'togetherEN-03', 'togetherEN-04', 'WailLoop']}, 'useSemitones': True, 'semitones': 6 + ps, 'cents': 0, 'pitch': 1.0, 'volume': 1.0, 'offset': 0, 'loop': True}},
+                {'type': 'riq__Entity', 'version': 0, 'datamodel': 'advanced/play sfx', 'beat': 1.0 + bo + (mo / 1000) / (60 / bpm), 'length': 0.5, 'dynamicData': {'track': tn, 'game': {'value': 39, 'Values': ['common', 'airboarder', 'airRally', 'animalAcrobat', 'balloonHunter', 'basketballGirls', 'bigRockFinish', 'blueBear', 'boardMeeting', 'bonOdori', 'bouncyRoad', 'builtToScaleDS', 'builtToScaleRvl', 'cannery', 'catchOfTheDay', 'catchyTune', 'chameleon', 'chargingChicken', 'cheerReaders', 'clappyTrio', 'clapTrap', 'coinToss', 'cropStomp', 'djSchool', 'dogNinja', 'doubleDate', 'dressYourBest', 'drummerDuel', 'drummingPractice', 'fanClub', 'figureFighter', 'fillbots', 'fireworks', 'firstContact', 'flipperFlop', 'forkLifter', 'freezeFrame', 'frogHop', 'frogPrincess', 'gleeClub', 'holeInOne', 'karateman', 'kitties', 'launchParty', 'lockstep', 'loveLab', 'lumbearjack', 'mannequinFactory', 'manzai', 'marchingOrders', 'meatGrinder', 'monkeyWatch', 'mrUpbeat', 'munchyMonk', 'nailCarpenter', 'nightWalkAgb', 'nipInTheBud', 'octopusMachine', 'packingPests', 'pajamaParty', 'powerCalligraphy', 'quizShow', 'rapMen', 'rhythmRally', 'rhythmSomen', 'rhythmTestGBA', 'rhythmTweezers', 'ringside', 'rockers', 'samuraiSliceNtr', 'seeSaw', 'shootEmUp', 'showtime', 'sickBeats', 'slotMonster', 'sneakySpirits', 'spaceball', 'spaceDance', 'spaceSoccer', 'splashdown', 'sumoBrothers', 'tambourine', 'tapTrial', 'tapTroupe', 'theDazzles', 'tossBoys', 'totemClimb', 'tramAndPauline', 'trickClass', 'tunnel', 'fallingWaffle', 'wizardsWaltz', 'workingDough']}, 'getSfx': 'Glee Club', 'sfxName': {'value': 9, 'Values': ['BatonDown', 'BatonUp', 'LoudWailLoop', 'LoudWailStart', 'StopWail', 'togetherEN-01', 'togetherEN-02', 'togetherEN-03', 'togetherEN-04', 'WailLoop']}, 'useSemitones': True, 'semitones': 1 + ps, 'cents': 0, 'pitch': 1.0, 'volume': 1.0, 'offset': 0, 'loop': True}},
+                {'type': 'riq__Entity', 'version': 0, 'datamodel': 'advanced/play sfx', 'beat': 1.75 + bo + (mo / 1000) / (60 / bpm), 'length': 0.25, 'dynamicData': {'track': tn, 'game': {'value': 39, 'Values': ['common', 'airboarder', 'airRally', 'animalAcrobat', 'balloonHunter', 'basketballGirls', 'bigRockFinish', 'blueBear', 'boardMeeting', 'bonOdori', 'bouncyRoad', 'builtToScaleDS', 'builtToScaleRvl', 'cannery', 'catchOfTheDay', 'catchyTune', 'chameleon', 'chargingChicken', 'cheerReaders', 'clappyTrio', 'clapTrap', 'coinToss', 'cropStomp', 'djSchool', 'dogNinja', 'doubleDate', 'dressYourBest', 'drummerDuel', 'drummingPractice', 'fanClub', 'figureFighter', 'fillbots', 'fireworks', 'firstContact', 'flipperFlop', 'forkLifter', 'freezeFrame', 'frogHop', 'frogPrincess', 'gleeClub', 'holeInOne', 'karateman', 'kitties', 'launchParty', 'lockstep', 'loveLab', 'lumbearjack', 'mannequinFactory', 'manzai', 'marchingOrders', 'meatGrinder', 'monkeyWatch', 'mrUpbeat', 'munchyMonk', 'nailCarpenter', 'nightWalkAgb', 'nipInTheBud', 'octopusMachine', 'packingPests', 'pajamaParty', 'powerCalligraphy', 'quizShow', 'rapMen', 'rhythmRally', 'rhythmSomen', 'rhythmTestGBA', 'rhythmTweezers', 'ringside', 'rockers', 'samuraiSliceNtr', 'seeSaw', 'shootEmUp', 'showtime', 'sickBeats', 'slotMonster', 'sneakySpirits', 'spaceball', 'spaceDance', 'spaceSoccer', 'splashdown', 'sumoBrothers', 'tambourine', 'tapTrial', 'tapTroupe', 'theDazzles', 'tossBoys', 'totemClimb', 'tramAndPauline', 'trickClass', 'tunnel', 'fallingWaffle', 'wizardsWaltz', 'workingDough']}, 'getSfx': 'Glee Club', 'sfxName': {'value': 9, 'Values': ['BatonDown', 'BatonUp', 'LoudWailLoop', 'LoudWailStart', 'StopWail', 'togetherEN-01', 'togetherEN-02', 'togetherEN-03', 'togetherEN-04', 'WailLoop']}, 'useSemitones': True, 'semitones': 0 + ps, 'cents': 0, 'pitch': 1.0, 'volume': 1.0, 'offset': 0, 'loop': True}},
+                {'type': 'riq__Entity', 'version': 0, 'datamodel': 'advanced/play sfx', 'beat': 2.25 + bo + (mo / 1000) / (60 / bpm), 'length': 0.25, 'dynamicData': {'track': tn, 'game': {'value': 39, 'Values': ['common', 'airboarder', 'airRally', 'animalAcrobat', 'balloonHunter', 'basketballGirls', 'bigRockFinish', 'blueBear', 'boardMeeting', 'bonOdori', 'bouncyRoad', 'builtToScaleDS', 'builtToScaleRvl', 'cannery', 'catchOfTheDay', 'catchyTune', 'chameleon', 'chargingChicken', 'cheerReaders', 'clappyTrio', 'clapTrap', 'coinToss', 'cropStomp', 'djSchool', 'dogNinja', 'doubleDate', 'dressYourBest', 'drummerDuel', 'drummingPractice', 'fanClub', 'figureFighter', 'fillbots', 'fireworks', 'firstContact', 'flipperFlop', 'forkLifter', 'freezeFrame', 'frogHop', 'frogPrincess', 'gleeClub', 'holeInOne', 'karateman', 'kitties', 'launchParty', 'lockstep', 'loveLab', 'lumbearjack', 'mannequinFactory', 'manzai', 'marchingOrders', 'meatGrinder', 'monkeyWatch', 'mrUpbeat', 'munchyMonk', 'nailCarpenter', 'nightWalkAgb', 'nipInTheBud', 'octopusMachine', 'packingPests', 'pajamaParty', 'powerCalligraphy', 'quizShow', 'rapMen', 'rhythmRally', 'rhythmSomen', 'rhythmTestGBA', 'rhythmTweezers', 'ringside', 'rockers', 'samuraiSliceNtr', 'seeSaw', 'shootEmUp', 'showtime', 'sickBeats', 'slotMonster', 'sneakySpirits', 'spaceball', 'spaceDance', 'spaceSoccer', 'splashdown', 'sumoBrothers', 'tambourine', 'tapTrial', 'tapTroupe', 'theDazzles', 'tossBoys', 'totemClimb', 'tramAndPauline', 'trickClass', 'tunnel', 'fallingWaffle', 'wizardsWaltz', 'workingDough']}, 'getSfx': 'Glee Club', 'sfxName': {'value': 9, 'Values': ['BatonDown', 'BatonUp', 'LoudWailLoop', 'LoudWailStart', 'StopWail', 'togetherEN-01', 'togetherEN-02', 'togetherEN-03', 'togetherEN-04', 'WailLoop']}, 'useSemitones': True, 'semitones': -1 + ps, 'cents': 0, 'pitch': 1.0, 'volume': 1.0, 'offset': 0, 'loop': True}},
+                {'type': 'riq__Entity', 'version': 0, 'datamodel': 'advanced/play sfx', 'beat': 2.75 + bo + (mo / 1000) / (60 / bpm), 'length': 0.5, 'dynamicData': {'track': tn, 'game': {'value': 39, 'Values': ['common', 'airboarder', 'airRally', 'animalAcrobat', 'balloonHunter', 'basketballGirls', 'bigRockFinish', 'blueBear', 'boardMeeting', 'bonOdori', 'bouncyRoad', 'builtToScaleDS', 'builtToScaleRvl', 'cannery', 'catchOfTheDay', 'catchyTune', 'chameleon', 'chargingChicken', 'cheerReaders', 'clappyTrio', 'clapTrap', 'coinToss', 'cropStomp', 'djSchool', 'dogNinja', 'doubleDate', 'dressYourBest', 'drummerDuel', 'drummingPractice', 'fanClub', 'figureFighter', 'fillbots', 'fireworks', 'firstContact', 'flipperFlop', 'forkLifter', 'freezeFrame', 'frogHop', 'frogPrincess', 'gleeClub', 'holeInOne', 'karateman', 'kitties', 'launchParty', 'lockstep', 'loveLab', 'lumbearjack', 'mannequinFactory', 'manzai', 'marchingOrders', 'meatGrinder', 'monkeyWatch', 'mrUpbeat', 'munchyMonk', 'nailCarpenter', 'nightWalkAgb', 'nipInTheBud', 'octopusMachine', 'packingPests', 'pajamaParty', 'powerCalligraphy', 'quizShow', 'rapMen', 'rhythmRally', 'rhythmSomen', 'rhythmTestGBA', 'rhythmTweezers', 'ringside', 'rockers', 'samuraiSliceNtr', 'seeSaw', 'shootEmUp', 'showtime', 'sickBeats', 'slotMonster', 'sneakySpirits', 'spaceball', 'spaceDance', 'spaceSoccer', 'splashdown', 'sumoBrothers', 'tambourine', 'tapTrial', 'tapTroupe', 'theDazzles', 'tossBoys', 'totemClimb', 'tramAndPauline', 'trickClass', 'tunnel', 'fallingWaffle', 'wizardsWaltz', 'workingDough']}, 'getSfx': 'Glee Club', 'sfxName': {'value': 9, 'Values': ['BatonDown', 'BatonUp', 'LoudWailLoop', 'LoudWailStart', 'StopWail', 'togetherEN-01', 'togetherEN-02', 'togetherEN-03', 'togetherEN-04', 'WailLoop']}, 'useSemitones': True, 'semitones': -3 + ps, 'cents': 0, 'pitch': 1.0, 'volume': 1.0, 'offset': 0, 'loop': True}},
+                {'type': 'riq__Entity', 'version': 0, 'datamodel': 'advanced/play sfx', 'beat': 3.25 + bo + (mo / 1000) / (60 / bpm), 'length': 0.25, 'dynamicData': {'track': tn, 'game': {'value': 39, 'Values': ['common', 'airboarder', 'airRally', 'animalAcrobat', 'balloonHunter', 'basketballGirls', 'bigRockFinish', 'blueBear', 'boardMeeting', 'bonOdori', 'bouncyRoad', 'builtToScaleDS', 'builtToScaleRvl', 'cannery', 'catchOfTheDay', 'catchyTune', 'chameleon', 'chargingChicken', 'cheerReaders', 'clappyTrio', 'clapTrap', 'coinToss', 'cropStomp', 'djSchool', 'dogNinja', 'doubleDate', 'dressYourBest', 'drummerDuel', 'drummingPractice', 'fanClub', 'figureFighter', 'fillbots', 'fireworks', 'firstContact', 'flipperFlop', 'forkLifter', 'freezeFrame', 'frogHop', 'frogPrincess', 'gleeClub', 'holeInOne', 'karateman', 'kitties', 'launchParty', 'lockstep', 'loveLab', 'lumbearjack', 'mannequinFactory', 'manzai', 'marchingOrders', 'meatGrinder', 'monkeyWatch', 'mrUpbeat', 'munchyMonk', 'nailCarpenter', 'nightWalkAgb', 'nipInTheBud', 'octopusMachine', 'packingPests', 'pajamaParty', 'powerCalligraphy', 'quizShow', 'rapMen', 'rhythmRally', 'rhythmSomen', 'rhythmTestGBA', 'rhythmTweezers', 'ringside', 'rockers', 'samuraiSliceNtr', 'seeSaw', 'shootEmUp', 'showtime', 'sickBeats', 'slotMonster', 'sneakySpirits', 'spaceball', 'spaceDance', 'spaceSoccer', 'splashdown', 'sumoBrothers', 'tambourine', 'tapTrial', 'tapTroupe', 'theDazzles', 'tossBoys', 'totemClimb', 'tramAndPauline', 'trickClass', 'tunnel', 'fallingWaffle', 'wizardsWaltz', 'workingDough']}, 'getSfx': 'Glee Club', 'sfxName': {'value': 9, 'Values': ['BatonDown', 'BatonUp', 'LoudWailLoop', 'LoudWailStart', 'StopWail', 'togetherEN-01', 'togetherEN-02', 'togetherEN-03', 'togetherEN-04', 'WailLoop']}, 'useSemitones': True, 'semitones': -6 + ps, 'cents': 0, 'pitch': 1.0, 'volume': 1.0, 'offset': 0, 'loop': True}},
+                {'type': 'riq__Entity', 'version': 0, 'datamodel': 'advanced/play sfx', 'beat': 3.5 + bo + (mo / 1000) / (60 / bpm), 'length': 0.25, 'dynamicData': {'track': tn, 'game': {'value': 39, 'Values': ['common', 'airboarder', 'airRally', 'animalAcrobat', 'balloonHunter', 'basketballGirls', 'bigRockFinish', 'blueBear', 'boardMeeting', 'bonOdori', 'bouncyRoad', 'builtToScaleDS', 'builtToScaleRvl', 'cannery', 'catchOfTheDay', 'catchyTune', 'chameleon', 'chargingChicken', 'cheerReaders', 'clappyTrio', 'clapTrap', 'coinToss', 'cropStomp', 'djSchool', 'dogNinja', 'doubleDate', 'dressYourBest', 'drummerDuel', 'drummingPractice', 'fanClub', 'figureFighter', 'fillbots', 'fireworks', 'firstContact', 'flipperFlop', 'forkLifter', 'freezeFrame', 'frogHop', 'frogPrincess', 'gleeClub', 'holeInOne', 'karateman', 'kitties', 'launchParty', 'lockstep', 'loveLab', 'lumbearjack', 'mannequinFactory', 'manzai', 'marchingOrders', 'meatGrinder', 'monkeyWatch', 'mrUpbeat', 'munchyMonk', 'nailCarpenter', 'nightWalkAgb', 'nipInTheBud', 'octopusMachine', 'packingPests', 'pajamaParty', 'powerCalligraphy', 'quizShow', 'rapMen', 'rhythmRally', 'rhythmSomen', 'rhythmTestGBA', 'rhythmTweezers', 'ringside', 'rockers', 'samuraiSliceNtr', 'seeSaw', 'shootEmUp', 'showtime', 'sickBeats', 'slotMonster', 'sneakySpirits', 'spaceball', 'spaceDance', 'spaceSoccer', 'splashdown', 'sumoBrothers', 'tambourine', 'tapTrial', 'tapTroupe', 'theDazzles', 'tossBoys', 'totemClimb', 'tramAndPauline', 'trickClass', 'tunnel', 'fallingWaffle', 'wizardsWaltz', 'workingDough']}, 'getSfx': 'Glee Club', 'sfxName': {'value': 9, 'Values': ['BatonDown', 'BatonUp', 'LoudWailLoop', 'LoudWailStart', 'StopWail', 'togetherEN-01', 'togetherEN-02', 'togetherEN-03', 'togetherEN-04', 'WailLoop']}, 'useSemitones': True, 'semitones': -3 + ps, 'cents': 0, 'pitch': 1.0, 'volume': 1.0, 'offset': 0, 'loop': True}},
+                {'type': 'riq__Entity', 'version': 0, 'datamodel': 'advanced/play sfx', 'beat': 3.75 + bo + (mo / 1000) / (60 / bpm), 'length': 0.25, 'dynamicData': {'track': tn, 'game': {'value': 39, 'Values': ['common', 'airboarder', 'airRally', 'animalAcrobat', 'balloonHunter', 'basketballGirls', 'bigRockFinish', 'blueBear', 'boardMeeting', 'bonOdori', 'bouncyRoad', 'builtToScaleDS', 'builtToScaleRvl', 'cannery', 'catchOfTheDay', 'catchyTune', 'chameleon', 'chargingChicken', 'cheerReaders', 'clappyTrio', 'clapTrap', 'coinToss', 'cropStomp', 'djSchool', 'dogNinja', 'doubleDate', 'dressYourBest', 'drummerDuel', 'drummingPractice', 'fanClub', 'figureFighter', 'fillbots', 'fireworks', 'firstContact', 'flipperFlop', 'forkLifter', 'freezeFrame', 'frogHop', 'frogPrincess', 'gleeClub', 'holeInOne', 'karateman', 'kitties', 'launchParty', 'lockstep', 'loveLab', 'lumbearjack', 'mannequinFactory', 'manzai', 'marchingOrders', 'meatGrinder', 'monkeyWatch', 'mrUpbeat', 'munchyMonk', 'nailCarpenter', 'nightWalkAgb', 'nipInTheBud', 'octopusMachine', 'packingPests', 'pajamaParty', 'powerCalligraphy', 'quizShow', 'rapMen', 'rhythmRally', 'rhythmSomen', 'rhythmTestGBA', 'rhythmTweezers', 'ringside', 'rockers', 'samuraiSliceNtr', 'seeSaw', 'shootEmUp', 'showtime', 'sickBeats', 'slotMonster', 'sneakySpirits', 'spaceball', 'spaceDance', 'spaceSoccer', 'splashdown', 'sumoBrothers', 'tambourine', 'tapTrial', 'tapTroupe', 'theDazzles', 'tossBoys', 'totemClimb', 'tramAndPauline', 'trickClass', 'tunnel', 'fallingWaffle', 'wizardsWaltz', 'workingDough']}, 'getSfx': 'Glee Club', 'sfxName': {'value': 9, 'Values': ['BatonDown', 'BatonUp', 'LoudWailLoop', 'LoudWailStart', 'StopWail', 'togetherEN-01', 'togetherEN-02', 'togetherEN-03', 'togetherEN-04', 'WailLoop']}, 'useSemitones': True, 'semitones': -1 + ps, 'cents': 0, 'pitch': 1.0, 'volume': 1.0, 'offset': 0, 'loop': True}},
+            ])
+            console.log(remix["entities"])
+            return remix;
         }
 
-        function downloadZip() {
-            window.location.href = '/download';
+    function loadAndModifyRIQ() {
+        const fileInput = document.getElementById('riqFileInput');
+        trackNumber = document.getElementById('trackNumber').value;
+        pitchShift = document.getElementById('pitchShift').value;
+        beatOffset = document.getElementById('beatOffset').value;
+        msOffset = document.getElementById('msOffset').value;
+
+        if (fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            fileName = file.name;
+            JSZip.loadAsync(file) // read the content of the .riq file
+            .then(function(zip) {
+                // Check if remix.json exists in the zip
+                if (zip.file("remix.json")) {
+                    return zip.file("remix.json").async("string") // Read the remix.json content
+                        .then(function(data) {
+                            // Parse the JSON data, modify it, and replace the content
+                            const cleanedData = data.replace(/^\ufeff/, '');
+                            let remix = JSON.parse(cleanedData);
+                            remix = modifyRemix(remix);
+                            // Replace the old remix.json with the modified one
+                            zip.file("remix.json", JSON.stringify(remix, null, 4));
+                            // Generate the modified zip blob
+                            return zip.generateAsync({
+                                type: "blob"
+                            });
+                        });
+                } else {
+                    throw new Error("remix.json not found in the zip file.");
+                }
+            })
+            .then(function(content) {
+                modifiedContent = content; // Save the modified content globally
+                document.getElementById('downloadButton').style.display = 'block'; // Show download button
+            })
+            .catch(function(err) {
+                alert('Error modifying the file: ' + err.message);
+                console.log(err.message);
+            });
+        } else {
+            alert('Please select a .RIQ file to upload.');
         }
-    </script>
+    }
+
+    function downloadModifiedRIQ() {
+        if (modifiedContent) {
+            saveAs(modifiedContent, `modified ${fileName}`); // Use FileSaver.js to save the file
+        } else {
+            alert('No modified file to download.');
+        }
+    }
+</script>
 </body>
 </html>
+
+
