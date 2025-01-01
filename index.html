@@ -212,55 +212,55 @@
             processVideo(file, targetWidth, targetHeight, chromaKeyRgb);
     });
     async function processVideo(file, targetWidth, targetHeight, chromaKeyRgb) {
-            const canvas = document.getElementById('frameCanvas');
-            const ctx = canvas.getContext('2d');
-            const videoPreview = document.getElementById('videoPreview');
-            canvas.width = targetWidth;
-            canvas.height = targetHeight;
+        const canvas = document.getElementById('frameCanvas');
+        const ctx = canvas.getContext('2d');
+        const videoPreview = document.getElementById('videoPreview');
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
 
-            const chunks = [];
-            const fps = 30; // Assuming 30 FPS; modify if needed.
+        const chunks = [];
+        const videoElement = document.createElement('video');
+        videoElement.src = URL.createObjectURL(file);
+        videoElement.muted = true;
+        await videoElement.play();
 
-            // Initialize MediaRecorder for output
-            const stream = canvas.captureStream(fps);
-            const recorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
+        // Get input video FPS
+        const fps = videoElement.videoHeight || 30;
 
-            recorder.ondataavailable = (event) => {
-                if (event.data.size > 0) chunks.push(event.data);
-            };
+        // Initialize MediaRecorder
+        const stream = canvas.captureStream(fps);
+        const recorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
 
-            recorder.onstop = () => {
-                const videoBlob = new Blob(chunks, { type: 'video/webm' });
-                const videoURL = URL.createObjectURL(videoBlob);
-                videoPreview.src = videoURL;
-                videoPreview.load();
-                videoPreview.play();
-                document.getElementById('loadingIndicator').style.display = 'none';
-            };
+        recorder.ondataavailable = (event) => {
+            if (event.data.size > 0) chunks.push(event.data);
+        };
 
-            recorder.start();
+        recorder.onstop = () => {
+            const videoBlob = new Blob(chunks, { type: 'video/webm' });
+            const videoURL = URL.createObjectURL(videoBlob);
+            videoPreview.src = videoURL;
+            videoPreview.load();
+            videoPreview.play();
+            document.getElementById('loadingIndicator').style.display = 'none';
+        };
 
-            const videoElement = document.createElement('video');
-            videoElement.src = URL.createObjectURL(file);
-            videoElement.muted = true;
-            videoElement.play();
+        recorder.start();
 
-            videoElement.addEventListener('play', () => {
-                const processFrame = () => {
-                    if (!videoElement.paused && !videoElement.ended) {
-                        ctx.drawImage(videoElement, 0, 0, targetWidth, targetHeight);
+        // Process frames
+        const processFrame = () => {
+            if (!videoElement.paused && !videoElement.ended) {
+                ctx.drawImage(videoElement, 0, 0, targetWidth, targetHeight);
 
-                        // Apply chroma key
-                        applyChromaKey(ctx, targetWidth, targetHeight, chromaKeyRgb);
+                // Apply chroma key
+                applyChromaKey(ctx, targetWidth, targetHeight, chromaKeyRgb);
 
-                        requestAnimationFrame(processFrame);
-                    } else {
-                        recorder.stop();
-                    }
-                };
+                setTimeout(processFrame, 1000 / fps); // Ensure correct frame timing
+            } else {
+                recorder.stop();
+            }
+        };
 
-                processFrame();
-            });
+        processFrame();
         }
 
     function applyChromaKey(ctx, width, height, chromaKeyRgb, threshold = 50) {
