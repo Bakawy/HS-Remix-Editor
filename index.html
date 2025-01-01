@@ -5,20 +5,26 @@
 <title>Modify and Download RIQ Files</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
 <style>
-    /* Simple styling to arrange content side-by-side */
     .container {
         display: flex;
         justify-content: space-between;
     }
-    .options {
-        width: 30%;
+    .options, .video-editor {
+        width: 45%;
         padding: 20px;
         border: 1px solid #ccc;
     }
     .upload {
-        width: 65%;
-        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .loading-indicator {
+        display: none;
+        text-align: center;
+        margin-top: 10px;
+        font-weight: bold;
+        color: blue;
     }
 </style>
 </head>
@@ -28,8 +34,27 @@
         <h1>Upload and Modify a .RIQ File</h1>
         <input type="file" id="riqFileInput" accept=".riq">
         <button onclick="loadAndModifyRIQ()">Load and Modify File</button>
+        <button id="useModifiedAsInput" style="display:none;" onclick="useModifiedAsInput()">Modify using Output as Input</button>
         <h2>Download Modified File</h2>
         <button id="downloadButton" style="display:none;" onclick="downloadModifiedRIQ()">Download Modified .RIQ</button>
+    </div>
+    <div class="video-editor">
+        <h1>Simple Video Editor</h1>
+        <input type="file" id="videoInput" accept="video/mp4">
+        <video id="videoPreview" controls style="width: 100%; margin-top: 10px;"></video>
+        <div>
+            <label for="resolutionWidth">Width: </label>
+            <input type="number" id="resolutionWidth" placeholder="e.g., 1920">
+            <label for="resolutionHeight">Height: </label>
+            <input type="number" id="resolutionHeight" placeholder="e.g., 1080">
+        </div>
+        <div>
+            <label for="chromaKeyColor">Chroma Key (Replace Color): </label>
+            <input type="color" id="chromaKeyColor" value="#00ff00">
+        </div>
+        <button id="applyChangesButton">Apply Changes</button>
+        <button id="downloadVideoButton" style="display:none;" onclick="downloadEditedVideo()">Download Edited Video</button>
+        <div class="loading-indicator" id="loadingIndicator">Processing... Please wait.</div>
     </div>
     <div class="options">
         <h2>Options</h2>
@@ -85,14 +110,18 @@
             return remix;
         }
 
-    function loadAndModifyRIQ() {
-        const fileInput = document.getElementById('riqFileInput');
+    function loadAndModifyRIQ(fileInput = "none") {
+        if (fileInput == "none") {
+            fileInput = document.getElementById('riqFileInput');
+        }
         trackNumber = document.getElementById('trackNumber').value;
         pitchShift = document.getElementById('pitchShift').value;
         beatOffset = document.getElementById('beatOffset').value;
         msOffset = document.getElementById('msOffset').value;
 
         if (fileInput.files.length > 0) {
+            document.getElementById('downloadButton').style.display = 'none';
+            document.getElementById('useModifiedAsInput').style.display = 'none';
             const file = fileInput.files[0];
             fileName = file.name;
             JSZip.loadAsync(file) // read the content of the .riq file
@@ -118,7 +147,9 @@
             })
             .then(function(content) {
                 modifiedContent = content; // Save the modified content globally
+                modifiedContent.name = `modified ${fileName}`;
                 document.getElementById('downloadButton').style.display = 'block'; // Show download button
+                document.getElementById('useModifiedAsInput').style.display = 'block';
             })
             .catch(function(err) {
                 alert('Error modifying the file: ' + err.message);
@@ -129,15 +160,109 @@
         }
     }
 
+    function useModifiedAsInput() {
+        fi = {
+            files: [modifiedContent]
+        }
+        loadAndModifyRIQ(fi);
+    }
+
     function downloadModifiedRIQ() {
         if (modifiedContent) {
-            saveAs(modifiedContent, `modified ${fileName}`); // Use FileSaver.js to save the file
+            saveAs(modifiedContent, modifiedContent.name); // Use FileSaver.js to save the file
         } else {
             alert('No modified file to download.');
         }
     }
 </script>
+<script type="module">
+    import { FFmpeg } from 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.13/+esm';
+
+    const ffmpeg = new FFmpeg();
+    const loadingIndicator = document.getElementById('loadingIndicator');
+
+    async function loadFFmpeg() {
+        if (!ffmpeg.loaded) {
+            loadingIndicator.textContent = 'Loading FFmpeg...';
+            loadingIndicator.style.display = 'block';
+            await ffmpeg.load();
+            loadingIndicator.style.display = 'none';
+            console.log("FFmpeg loaded!");
+        }
+    }
+
+    loadFFmpeg();
+
+    document.getElementById('applyChangesButton').addEventListener('click', async () => {
+        const fileInput = document.getElementById('videoInput');
+        const width = document.getElementById('resolutionWidth').value || '1920';
+        const height = document.getElementById('resolutionHeight').value || '1080';
+
+        if (fileInput.files.length === 0) {
+            alert("Please upload a video file first.");
+            return;
+        }
+
+        const file = fileInput.files[0];
+        loadingIndicator.textContent = 'Processing video... Please wait.';
+        loadingIndicator.style.display = 'block';
+
+        const reader = new FileReader();
+        reader.onload = async () => {
+            const inputFileName = 'input.mp4';
+            const outputFileName = 'output.mp4';
+
+            try {
+                // Write the input file to FFmpeg's virtual file system
+                await ffmpeg.writeFile(inputFileName, new Uint8Array(reader.result));
+
+                // Execute the stretch command
+                await ffmpeg.exec([
+                    '-i', inputFileName,
+                    '-vf', `scale=${width}:${height}`,
+                    outputFileName
+                ]);
+
+                // Read the processed file
+                const data = await ffmpeg.readFile(outputFileName);
+
+                // Create a downloadable link
+                const videoBlob = new Blob([data.buffer], { type: 'video/mp4' });
+                const videoElement = document.getElementById('videoPreview');
+                videoElement.src = URL.createObjectURL(videoBlob);
+                videoElement.load();
+
+                document.getElementById('downloadVideoButton').style.display = 'block';
+                document.getElementById('downloadVideoButton').onclick = () => {
+                    const link = document.createElement('a');
+                    link.href = videoElement.src;
+                    link.download = 'edited-video.mp4';
+                    link.click();
+                };
+            } catch (err) {
+                console.error('Error processing video:', err);
+                alert('An error occurred while processing the video. Check the console for details.');
+            } finally {
+                loadingIndicator.style.display = 'none';
+            }
+        };
+
+        reader.readAsArrayBuffer(file);
+    });
+
+    document.getElementById('videoInput').addEventListener('change', (event) => {
+        const video = event.target.files[0];
+        if (video && video.type === 'video/mp4') {
+            const objectURL = URL.createObjectURL(video);
+            const videoElement = document.getElementById('videoPreview');
+            videoElement.src = objectURL;
+            videoElement.load();
+        } else {
+            alert('Please select a valid MP4 file.');
+        }
+    });
+</script>
+
+
 </body>
 </html>
-
-
