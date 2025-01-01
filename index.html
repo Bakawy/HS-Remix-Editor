@@ -49,7 +49,7 @@
             <input type="number" id="resolutionHeight" placeholder="e.g., 1080">
         </div>
         <div>
-            <label for="chromaKeyColor">Chroma Key (WIP): </label>
+            <label for="chromaKeyColor">Chroma Key: </label>
             <input type="color" id="chromaKeyColor" value="#00ff00">
         </div>
         <button id="applyChangesButton">Apply Changes</button>
@@ -195,9 +195,11 @@
         }
     });
     document.getElementById('applyChangesButton').addEventListener('click', async () => {
-        const videoInput = document.getElementById("videoInput");
+            const videoInput = document.getElementById("videoInput");
             const targetWidth = parseInt(document.getElementById("resolutionWidth").value, 10) || 1920;
             const targetHeight = parseInt(document.getElementById("resolutionHeight").value, 10) || 1080;
+            const chromaKeyColor = document.getElementById("chromaKeyColor").value;
+            const chromaKeyRgb = hexToRgb(chromaKeyColor);
 
             if (!videoInput.files.length) {
                 alert("Please select a video file.");
@@ -207,9 +209,9 @@
             document.getElementById('loadingIndicator').style.display = 'block';
 
             const file = videoInput.files[0];
-            processVideo(file, targetWidth, targetHeight);
+            processVideo(file, targetWidth, targetHeight, chromaKeyRgb);
     });
-    async function processVideo(file, targetWidth, targetHeight) {
+    async function processVideo(file, targetWidth, targetHeight, chromaKeyRgb) {
             const canvas = document.getElementById('frameCanvas');
             const ctx = canvas.getContext('2d');
             const videoPreview = document.getElementById('videoPreview');
@@ -221,7 +223,7 @@
 
             // Initialize MediaRecorder for output
             const stream = canvas.captureStream(fps);
-            const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+            const recorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
 
             recorder.ondataavailable = (event) => {
                 if (event.data.size > 0) chunks.push(event.data);
@@ -247,6 +249,10 @@
                 const processFrame = () => {
                     if (!videoElement.paused && !videoElement.ended) {
                         ctx.drawImage(videoElement, 0, 0, targetWidth, targetHeight);
+
+                        // Apply chroma key
+                        applyChromaKey(ctx, targetWidth, targetHeight, chromaKeyRgb);
+
                         requestAnimationFrame(processFrame);
                     } else {
                         recorder.stop();
@@ -256,6 +262,39 @@
                 processFrame();
             });
         }
+
+    function applyChromaKey(ctx, width, height, chromaKeyRgb, threshold = 50) {
+        const imageData = ctx.getImageData(0, 0, width, height);
+        const data = imageData.data;
+
+        for (let i = 0; i < data.length; i += 4) {
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
+
+            // Calculate Euclidean distance between pixel color and chroma key color
+            const distance = Math.sqrt(
+                Math.pow(r - chromaKeyRgb.r, 2) +
+                Math.pow(g - chromaKeyRgb.g, 2) +
+                Math.pow(b - chromaKeyRgb.b, 2)
+            );
+
+            if (distance < threshold) {
+                data[i + 3] = 0; // Set alpha to 0 (transparent)
+            }
+        }
+
+        ctx.putImageData(imageData, 0, 0);
+    }
+
+    function hexToRgb(hex) {
+        const bigint = parseInt(hex.slice(1), 16);
+        return {
+            r: (bigint >> 16) & 255,
+            g: (bigint >> 8) & 255,
+            b: bigint & 255,
+        };
+    }
 </script>
 
 
