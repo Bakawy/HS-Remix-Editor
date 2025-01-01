@@ -5,7 +5,7 @@
 <title>Modify and Download RIQ Files</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-
+<script async src="https://docs.opencv.org/4.x/opencv.js"></script>
 <style>
     .container {
         display: flex;
@@ -39,7 +39,7 @@
         <button id="downloadButton" style="display:none;" onclick="downloadModifiedRIQ()">Download Modified .RIQ</button>
     </div>
     <div class="video-editor">
-        <h1>Simple Video Editor</h1>
+        <h1>Video Editor</h1>
         <input type="file" id="videoInput" accept="video/mp4">
         <video id="videoPreview" controls style="width: 100%; margin-top: 10px;"></video>
         <div>
@@ -49,12 +49,13 @@
             <input type="number" id="resolutionHeight" placeholder="e.g., 1080">
         </div>
         <div>
-            <label for="chromaKeyColor">Chroma Key (Replace Color): </label>
+            <label for="chromaKeyColor">Chroma Key (WIP): </label>
             <input type="color" id="chromaKeyColor" value="#00ff00">
         </div>
         <button id="applyChangesButton">Apply Changes</button>
         <button id="downloadVideoButton" style="display:none;" onclick="downloadEditedVideo()">Download Edited Video</button>
         <div class="loading-indicator" id="loadingIndicator">Processing... Please wait.</div>
+        <canvas id="frameCanvas" style="display:none;"></canvas>
     </div>
     <div class="options">
         <h2>Options</h2>
@@ -176,91 +177,76 @@
     }
 </script>
 <script type="module">
-    import { FFmpeg } from 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.13/+esm';
-
-    const ffmpeg = new FFmpeg();
-    const loadingIndicator = document.getElementById('loadingIndicator');
-
-    async function loadFFmpeg() {
-        if (!ffmpeg.loaded) {
-            loadingIndicator.textContent = 'Loading FFmpeg...';
-            loadingIndicator.style.display = 'block';
-            await ffmpeg.load();
-            loadingIndicator.style.display = 'none';
-            console.log("FFmpeg loaded!");
-        }
-    }
-
-    loadFFmpeg();
-
-    document.getElementById('applyChangesButton').addEventListener('click', async () => {
-        const fileInput = document.getElementById('videoInput');
-        const width = document.getElementById('resolutionWidth').value || '1920';
-        const height = document.getElementById('resolutionHeight').value || '1080';
-
-        if (fileInput.files.length === 0) {
-            alert("Please upload a video file first.");
-            return;
-        }
-
-        const file = fileInput.files[0];
-        loadingIndicator.textContent = 'Processing video... Please wait.';
-        loadingIndicator.style.display = 'block';
-
-        const reader = new FileReader();
-        reader.onload = async () => {
-            const inputFileName = 'input.mp4';
-            const outputFileName = 'output.mp4';
-
-            try {
-                // Write the input file to FFmpeg's virtual file system
-                await ffmpeg.writeFile(inputFileName, new Uint8Array(reader.result));
-
-                // Execute the stretch command
-                await ffmpeg.exec([
-                    '-i', inputFileName,
-                    '-vf', `scale=${width}:${height}`,
-                    outputFileName
-                ]);
-
-                // Read the processed file
-                const data = await ffmpeg.readFile(outputFileName);
-
-                // Create a downloadable link
-                const videoBlob = new Blob([data.buffer], { type: 'video/mp4' });
-                const videoElement = document.getElementById('videoPreview');
-                videoElement.src = URL.createObjectURL(videoBlob);
-                videoElement.load();
-
-                document.getElementById('downloadVideoButton').style.display = 'block';
-                document.getElementById('downloadVideoButton').onclick = () => {
-                    const link = document.createElement('a');
-                    link.href = videoElement.src;
-                    link.download = 'edited-video.mp4';
-                    link.click();
-                };
-            } catch (err) {
-                console.error('Error processing video:', err);
-                alert('An error occurred while processing the video. Check the console for details.');
-            } finally {
-                loadingIndicator.style.display = 'none';
-            }
-        };
-
-        reader.readAsArrayBuffer(file);
-    });
-
-    document.getElementById('videoInput').addEventListener('change', (event) => {
-        const video = event.target.files[0];
-        if (video && video.type === 'video/mp4') {
-            const objectURL = URL.createObjectURL(video);
+    document.getElementById('videoInput').addEventListener('change', function(event) {
+        const file = event.target.files[0];
+        if (file) {
             const videoElement = document.getElementById('videoPreview');
-            videoElement.src = objectURL;
+            videoElement.src = URL.createObjectURL(file);
             videoElement.load();
-        } else {
-            alert('Please select a valid MP4 file.');
         }
     });
+    document.getElementById('applyChangesButton').addEventListener('click', async () => {
+        const videoInput = document.getElementById("videoInput");
+            const targetWidth = parseInt(document.getElementById("resolutionWidth").value, 10) || 1920;
+            const targetHeight = parseInt(document.getElementById("resolutionHeight").value, 10) || 1080;
+
+            if (!videoInput.files.length) {
+                alert("Please select a video file.");
+                return;
+            }
+
+            document.getElementById('loadingIndicator').style.display = 'block';
+
+            const file = videoInput.files[0];
+            processVideo(file, targetWidth, targetHeight);
+    });
+    async function processVideo(file, targetWidth, targetHeight) {
+            const canvas = document.getElementById('frameCanvas');
+            const ctx = canvas.getContext('2d');
+            const videoPreview = document.getElementById('videoPreview');
+            canvas.width = targetWidth;
+            canvas.height = targetHeight;
+
+            const chunks = [];
+            const fps = 30; // Assuming 30 FPS; modify if needed.
+
+            // Initialize MediaRecorder for output
+            const stream = canvas.captureStream(fps);
+            const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+
+            recorder.ondataavailable = (event) => {
+                if (event.data.size > 0) chunks.push(event.data);
+            };
+
+            recorder.onstop = () => {
+                const videoBlob = new Blob(chunks, { type: 'video/webm' });
+                const videoURL = URL.createObjectURL(videoBlob);
+                videoPreview.src = videoURL;
+                videoPreview.load();
+                videoPreview.play();
+                document.getElementById('loadingIndicator').style.display = 'none';
+            };
+
+            recorder.start();
+
+            const videoElement = document.createElement('video');
+            videoElement.src = URL.createObjectURL(file);
+            videoElement.muted = true;
+            videoElement.play();
+
+            videoElement.addEventListener('play', () => {
+                const processFrame = () => {
+                    if (!videoElement.paused && !videoElement.ended) {
+                        ctx.drawImage(videoElement, 0, 0, targetWidth, targetHeight);
+                        requestAnimationFrame(processFrame);
+                    } else {
+                        recorder.stop();
+                    }
+                };
+
+                processFrame();
+            });
+        }
 </script>
 
 
