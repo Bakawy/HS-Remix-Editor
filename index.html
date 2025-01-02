@@ -200,8 +200,8 @@
     });
     document.getElementById('applyChangesButton').addEventListener('click', async () => {
             const videoInput = document.getElementById("videoInput");
-            const targetWidth = parseInt(document.getElementById("resolutionWidth").value, 10) || parseInt(widthInput.placeholder);
-            const targetHeight = parseInt(document.getElementById("resolutionHeight").value, 10) || parseInt(heightInput.placeholder);
+            const targetWidth = parseInt(document.getElementById("resolutionWidth").value, 10) || parseInt(document.getElementById('resolutionWidth').placeholder);
+            const targetHeight = parseInt(document.getElementById("resolutionHeight").value, 10) || parseInt(document.getElementById('resolutionHeight').placeholder);
             const chromaKeyColor = document.getElementById("chromaKeyColor").value;
             const chromaKeyRgb = hexToRgb(chromaKeyColor);
             const fps = parseInt(document.getElementById("fpsInput").value, 10) || 30;
