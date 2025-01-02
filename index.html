@@ -218,7 +218,7 @@
     });
     async function processVideo(file, targetWidth, targetHeight, chromaKeyRgb, fps) {
             const canvas = document.getElementById('frameCanvas');
-            const ctx = canvas.getContext('2d');
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
             const videoPreview = document.getElementById('videoPreview');
             canvas.width = targetWidth;
             canvas.height = targetHeight;
@@ -266,7 +266,7 @@
     }
 
     function applyChromaKey(ctx, width, height, chromaKeyRgb, threshold = 50) {
-        const imageData = ctx.getImageData(0, 0, width, height);
+        const imageData = ctx.getImageData(0, 0, width, height, {});
         const data = imageData.data;
 
         for (let i = 0; i < data.length; i += 4) {
