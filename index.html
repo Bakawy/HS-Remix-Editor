@@ -41,6 +41,7 @@
     <div class="video-editor">
         <h1>Video Editor</h1>
         <input type="file" id="videoInput" accept="video/mp4">
+        background:<input type="color" id="videoBGColor" value="#ffffff"><br>
         <video id="videoPreview" controls style="width: 100%; margin-top: 10px;"></video>
         <div>
             <label for="resolutionWidth">Width: </label>
@@ -182,6 +183,36 @@
 </script>
 <script type="module">
     let rerun = false;
+    document.getElementById("videoBGColor").addEventListener('change', function(event) {
+        const bgColor = event.target.value;
+        const videoEditor = document.getElementsByClassName('video-editor')[0];
+        
+        // Set the background color
+        videoEditor.style.backgroundColor = bgColor;
+
+        // Calculate the inverted color for text
+        const invertedColor = invertColor(bgColor);
+        videoEditor.style.color = invertedColor;
+    });
+
+    // Function to invert the color
+    function invertColor(hex) {
+        // Remove the hash (#) if it exists
+        hex = hex.replace('#', '');
+        
+        // Convert hex to RGB
+        const r = parseInt(hex.substring(0, 2), 16);
+        const g = parseInt(hex.substring(2, 4), 16);
+        const b = parseInt(hex.substring(4, 6), 16);
+        
+        // Invert each channel
+        const invertedR = (255 - r).toString(16).padStart(2, '0');
+        const invertedG = (255 - g).toString(16).padStart(2, '0');
+        const invertedB = (255 - b).toString(16).padStart(2, '0');
+        
+        // Return the inverted color as a hex string
+        return `#${invertedR}${invertedG}${invertedB}`;
+    }
     document.getElementById('videoInput').addEventListener('change', function(event) {
         const file = event.target.files[0];
         if (file) {
