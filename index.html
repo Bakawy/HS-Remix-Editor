@@ -6,6 +6,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 <script async src="https://docs.opencv.org/4.x/opencv.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script> s
 <style>
     .container {
         display: flex;
@@ -56,6 +57,9 @@
         <div>
             <label for="fpsInput">FPS: </label>
             <input type="number" id="fpsInput" placeholder="e.g., 30">
+        </div>
+        <div>
+            <button id="extractFramesButton">Extract Frames as PNGs</button>
         </div>
         <button id="applyChangesButton">Apply Changes</button>
         <button id="downloadVideoButton" style="display:none;" onclick="downloadEditedVideo()">Download Edited Video</button>
@@ -319,6 +323,96 @@
 
         ctx.putImageData(imageData, 0, 0);
     }
+
+    async function extractFramesAsPNGs(file, targetWidth, targetHeight, fps, chromaKeyColor) {
+        const canvas = document.getElementById('frameCanvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        const frameList = [];
+        const chromaKeyRgb = hexToRgb(chromaKeyColor);
+
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+
+        const videoElement = document.createElement('video');
+        videoElement.src = URL.createObjectURL(file);
+        videoElement.muted = true;
+
+        await new Promise((resolve) => (videoElement.onloadeddata = resolve));
+        videoElement.pause();
+
+        const frameInterval = 1 / fps; // Time between frames in seconds
+        videoElement.currentTime = 0;
+
+        function processFrame() {
+            if (videoElement.currentTime >= videoElement.duration) {
+                // All frames processed, download as ZIP
+                console.log('All frames processed. Total frames:', frameList.length);
+                downloadFramesAsZip(frameList);
+                return;
+            }
+
+            ctx.drawImage(videoElement, 0, 0, targetWidth, targetHeight);
+
+            // Apply chroma key effect
+            applyChromaKey(ctx, targetWidth, targetHeight, chromaKeyRgb);
+
+            // Save the frame as a PNG blob
+            canvas.toBlob((blob) => {
+                if (blob) {
+                    frameList.push({ index: frameList.length, blob });
+
+                    // Move to the next frame
+                    videoElement.currentTime += frameInterval;
+                } else {
+                    console.warn('Blob creation failed for frame');
+                }
+            }, 'image/png');
+        }
+
+        videoElement.addEventListener('seeked', processFrame);
+
+        // Start processing frames
+        videoElement.currentTime = 0;
+    }
+
+    function downloadFramesAsZip(frameList) {
+        const zip = new JSZip();
+
+        frameList.forEach((frame) => {
+            zip.file(`frame_${frame.index + 1}.png`, frame.blob);
+        });
+
+        zip.generateAsync({ type: 'blob' }).then((content) => {
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(content);
+            link.download = 'frames.zip';
+            link.click();
+
+            // Cleanup
+            URL.revokeObjectURL(link.href);
+        });
+
+        document.getElementById('loadingIndicator').style.display = 'none';
+    }
+
+    document.getElementById("extractFramesButton").addEventListener("click", () => {
+        const videoInput = document.getElementById("videoInput");
+        const targetWidth = parseInt(document.getElementById("resolutionWidth").value, 10) || 1920;
+        const targetHeight = parseInt(document.getElementById("resolutionHeight").value, 10) || 1080;
+        const fps = parseInt(document.getElementById("fpsInput").value, 10) || 30;
+        const chromaKeyColor = document.getElementById("chromaKeyColor").value;
+
+        if (!videoInput.files.length) {
+            alert("Please select a video file.");
+            return;
+        }
+
+        document.getElementById('loadingIndicator').style.display = 'block';
+
+        const file = videoInput.files[0];
+        extractFramesAsPNGs(file, targetWidth, targetHeight, fps, chromaKeyColor);
+    });
+
 
     function hexToRgb(hex) {
         const bigint = parseInt(hex.slice(1), 16);
