@@ -18,6 +18,10 @@ document.getElementById('trackNumber').oninput = function() {
     document.getElementById('trackNumberValue').textContent = this.value;
 };
 
+document.getElementById('layer').oninput = function() {
+    document.getElementById('layerValue').textContent = this.value;
+};
+
 function modifyRemix(remix) {
     const fps = parseInt(document.getElementById("fpsInput").value, 10) || 30;
     const bpm = remix["tempoChanges"][0]["dynamicData"]["tempo"]
