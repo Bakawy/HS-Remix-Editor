@@ -277,7 +277,6 @@ async function processVideo(file, targetWidth, targetHeight, chromaKeyRgb, fps) 
 
         let isDuplicate = false;
         if (differenceThreshold > 0) {
-            console.log("ran")
             for (let i = 0; i < uniqueImageDataList.length; i++) {
                 const diffScore = calculateDifferenceScore(currentImageData, uniqueImageDataList[i]);
                 if (diffScore < differenceThreshold) {
