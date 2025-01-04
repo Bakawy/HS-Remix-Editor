@@ -6,7 +6,7 @@ let pitchShift;
 let beatOffset;
 let msOffset;
 let frameFiles = [];
-
+let hi;
 document.getElementById('trackNumber').oninput = function() {
     document.getElementById('trackNumberValue').textContent = this.value;
 };
