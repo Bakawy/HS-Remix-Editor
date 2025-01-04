@@ -33,8 +33,8 @@
     <div class="upload">
         <h1>Upload and Modify a .RIQ File</h1>
         <input type="file" id="riqFileInput" accept=".riq">
-        <button onclick="loadAndModifyRIQ()">Load and add Sans</button>
-        <button id="useModifiedAsInput" style="display:none;" onclick="useModifiedAsInput()">Add Sans using Output as Input</button>
+        <button onclick="loadAndModifyRIQ()">Load and add Video</button>
+        <button id="useModifiedAsInput" style="display:none;" onclick="useModifiedAsInput()">Add Video using Output as Input</button>
         <h2>Download Modified File</h2>
         <button id="downloadButton" style="display:none;" onclick="downloadModifiedRIQ()">Download Modified .RIQ</button>
     </div>
@@ -80,10 +80,18 @@
         <h2>Options</h2>
         <label for="trackNumber">Track Number:</label>
         <span id="trackNumberValue">1</span>
-        <input type="range" id="trackNumber" min="1" max="10" step="1" value="1"><br><br>
-        <label for="pitchShift">Pitch Shift:</label>
-        <span id="pitchShiftValue">0</span>
-        <input type="range" id="pitchShift" min="-30" max="30" step="1" value="0"><br><br>
+        <input type="range" id="trackNumber" min="0" max="10" step="1" value="1"><br><br>
+        <label for="layer">Layer:</label>
+        <span id="layerValue">0</span>
+        <input type="range" id="layer" min="-100" max="100" step="1" value="0"><br>
+        <label for="xPos">X Position:</label>
+        <input type="number" id="xPos" value="0" min="-20" max="20"><br>
+        <label for="yPos">Y Position:</label>
+        <input type="number" id="yPos" value="0" min="-20" max="20"><br>
+        <label for="width">Width:</label>
+        <input type="number" id="width" value="1" min="-5" max="5"><br>
+        <label for="height">Height:</label>
+        <input type="number" id="height" value="1" min="-5" max="5"><br><br>
         <label for="beatOffset">Beat Offset:</label>
         <input type="number" id="beatOffset" value="1"><br><br>
         <label for="msOffset">Milisecond Offset (based on initial bpm):</label>

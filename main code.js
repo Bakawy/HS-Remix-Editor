@@ -1,3 +1,9 @@
+/*
+4.3418
+1.4319
+1.25
+1.25
+*/
 //Main Section
 let modifiedContent = null; // This will hold the modified blob
 let fileName = "";
@@ -5,16 +11,36 @@ let trackNumber;
 let pitchShift;
 let beatOffset;
 let msOffset;
-let frameFiles = [];
-let hi;
+let frameList = [];
+let imageIndexList = [];
+
 document.getElementById('trackNumber').oninput = function() {
     document.getElementById('trackNumberValue').textContent = this.value;
 };
-document.getElementById('pitchShift').oninput = function() {
-    document.getElementById('pitchShiftValue').textContent = this.value;
-};
 
 function modifyRemix(remix) {
+    const fps = parseInt(document.getElementById("fpsInput").value, 10) || 30;
+    const bpm = remix["tempoChanges"][0]["dynamicData"]["tempo"]
+    const bpf = (bpm / (60 * fps)) // beats per frame
+    let track = parseInt(document.getElementById('trackNumber').value, 10) - 1;
+    if (track < 0) {track = 10}
+    const layer = parseInt(document.getElementById("layer").value, 10);
+    const xPos = parseFloat(document.getElementById("xPos").value, 10);
+    const yPos = parseFloat(document.getElementById("yPos").value, 10);
+    const width = parseFloat(document.getElementById("width").value, 10);
+    const height = parseFloat(document.getElementById("height").value, 10);
+    let beat = parseFloat(beatOffset) + (parseFloat(msOffset) / 1000) / (60 / bpm);
+    for (const index in imageIndexList) {
+        const imageFile = frameList[index]
+        if (!(imageFile)) {continue;}
+        let iN = imageFile.name
+        const imageName = imageFile.name.substring(0, iN.length - 4);
+        remix["entities"] = remix["entities"].concat([
+            {"type":"riq__Entity","version":1,"datamodel":"vfx/display decal","beat":beat,"length":bpf,"dynamicData":{"track":track,"sprite":imageName,"ease":1,"layer":layer,"sX":0.0,"sY":0.0,"sWidth":1.0,"sHeight":1.0,"sColor":{"r":1.0,"g":1.0,"b":1.0,"a":1.0},"eX":xPos,"eY":yPos,"eWidth":width,"eHeight":height,"eColor":{"r":1.0,"g":1.0,"b":1.0,"a":1.0}}}
+        ])
+        beat += bpf
+    }
+    if (false) {
         const True = true
         const False = false
         const bpm = remix["tempoChanges"][0]["dynamicData"]["tempo"]
@@ -34,57 +60,87 @@ function modifyRemix(remix) {
             {'type': 'riq__Entity', 'version': 0, 'datamodel': 'advanced/play sfx', 'beat': 3.5 + bo + (mo / 1000) / (60 / bpm), 'length': 0.25, 'dynamicData': {'track': tn, 'game': {'value': 39, 'Values': ['common', 'airboarder', 'airRally', 'animalAcrobat', 'balloonHunter', 'basketballGirls', 'bigRockFinish', 'blueBear', 'boardMeeting', 'bonOdori', 'bouncyRoad', 'builtToScaleDS', 'builtToScaleRvl', 'cannery', 'catchOfTheDay', 'catchyTune', 'chameleon', 'chargingChicken', 'cheerReaders', 'clappyTrio', 'clapTrap', 'coinToss', 'cropStomp', 'djSchool', 'dogNinja', 'doubleDate', 'dressYourBest', 'drummerDuel', 'drummingPractice', 'fanClub', 'figureFighter', 'fillbots', 'fireworks', 'firstContact', 'flipperFlop', 'forkLifter', 'freezeFrame', 'frogHop', 'frogPrincess', 'gleeClub', 'holeInOne', 'karateman', 'kitties', 'launchParty', 'lockstep', 'loveLab', 'lumbearjack', 'mannequinFactory', 'manzai', 'marchingOrders', 'meatGrinder', 'monkeyWatch', 'mrUpbeat', 'munchyMonk', 'nailCarpenter', 'nightWalkAgb', 'nipInTheBud', 'octopusMachine', 'packingPests', 'pajamaParty', 'powerCalligraphy', 'quizShow', 'rapMen', 'rhythmRally', 'rhythmSomen', 'rhythmTestGBA', 'rhythmTweezers', 'ringside', 'rockers', 'samuraiSliceNtr', 'seeSaw', 'shootEmUp', 'showtime', 'sickBeats', 'slotMonster', 'sneakySpirits', 'spaceball', 'spaceDance', 'spaceSoccer', 'splashdown', 'sumoBrothers', 'tambourine', 'tapTrial', 'tapTroupe', 'theDazzles', 'tossBoys', 'totemClimb', 'tramAndPauline', 'trickClass', 'tunnel', 'fallingWaffle', 'wizardsWaltz', 'workingDough']}, 'getSfx': 'Glee Club', 'sfxName': {'value': 9, 'Values': ['BatonDown', 'BatonUp', 'LoudWailLoop', 'LoudWailStart', 'StopWail', 'togetherEN-01', 'togetherEN-02', 'togetherEN-03', 'togetherEN-04', 'WailLoop']}, 'useSemitones': True, 'semitones': -3 + ps, 'cents': 0, 'pitch': 1.0, 'volume': 1.0, 'offset': 0, 'loop': True}},
             {'type': 'riq__Entity', 'version': 0, 'datamodel': 'advanced/play sfx', 'beat': 3.75 + bo + (mo / 1000) / (60 / bpm), 'length': 0.25, 'dynamicData': {'track': tn, 'game': {'value': 39, 'Values': ['common', 'airboarder', 'airRally', 'animalAcrobat', 'balloonHunter', 'basketballGirls', 'bigRockFinish', 'blueBear', 'boardMeeting', 'bonOdori', 'bouncyRoad', 'builtToScaleDS', 'builtToScaleRvl', 'cannery', 'catchOfTheDay', 'catchyTune', 'chameleon', 'chargingChicken', 'cheerReaders', 'clappyTrio', 'clapTrap', 'coinToss', 'cropStomp', 'djSchool', 'dogNinja', 'doubleDate', 'dressYourBest', 'drummerDuel', 'drummingPractice', 'fanClub', 'figureFighter', 'fillbots', 'fireworks', 'firstContact', 'flipperFlop', 'forkLifter', 'freezeFrame', 'frogHop', 'frogPrincess', 'gleeClub', 'holeInOne', 'karateman', 'kitties', 'launchParty', 'lockstep', 'loveLab', 'lumbearjack', 'mannequinFactory', 'manzai', 'marchingOrders', 'meatGrinder', 'monkeyWatch', 'mrUpbeat', 'munchyMonk', 'nailCarpenter', 'nightWalkAgb', 'nipInTheBud', 'octopusMachine', 'packingPests', 'pajamaParty', 'powerCalligraphy', 'quizShow', 'rapMen', 'rhythmRally', 'rhythmSomen', 'rhythmTestGBA', 'rhythmTweezers', 'ringside', 'rockers', 'samuraiSliceNtr', 'seeSaw', 'shootEmUp', 'showtime', 'sickBeats', 'slotMonster', 'sneakySpirits', 'spaceball', 'spaceDance', 'spaceSoccer', 'splashdown', 'sumoBrothers', 'tambourine', 'tapTrial', 'tapTroupe', 'theDazzles', 'tossBoys', 'totemClimb', 'tramAndPauline', 'trickClass', 'tunnel', 'fallingWaffle', 'wizardsWaltz', 'workingDough']}, 'getSfx': 'Glee Club', 'sfxName': {'value': 9, 'Values': ['BatonDown', 'BatonUp', 'LoudWailLoop', 'LoudWailStart', 'StopWail', 'togetherEN-01', 'togetherEN-02', 'togetherEN-03', 'togetherEN-04', 'WailLoop']}, 'useSemitones': True, 'semitones': -1 + ps, 'cents': 0, 'pitch': 1.0, 'volume': 1.0, 'offset': 0, 'loop': True}},
         ])
-        console.log(remix["entities"])
-        return remix;
     }
+    console.log(remix["entities"])
+    return remix;
+}
 
 function loadAndModifyRIQ(fileInput = "none") {
-    if (fileInput == "none") {
-        fileInput = document.getElementById('riqFileInput');
-    }
-    trackNumber = document.getElementById('trackNumber').value;
-    pitchShift = document.getElementById('pitchShift').value;
-    beatOffset = document.getElementById('beatOffset').value;
-    msOffset = document.getElementById('msOffset').value;
-
-    if (fileInput.files.length > 0) {
-        document.getElementById('downloadButton').style.display = 'none';
-        document.getElementById('useModifiedAsInput').style.display = 'none';
-        const file = fileInput.files[0];
-        fileName = file.name;
-        JSZip.loadAsync(file) // read the content of the .riq file
-        .then(function(zip) {
-            // Check if remix.json exists in the zip
-            if (zip.file("remix.json")) {
-                return zip.file("remix.json").async("string") // Read the remix.json content
-                    .then(function(data) {
-                        // Parse the JSON data, modify it, and replace the content
-                        const cleanedData = data.replace(/^\ufeff/, '');
-                        let remix = JSON.parse(cleanedData);
-                        remix = modifyRemix(remix);
-                        // Replace the old remix.json with the modified one
-                        zip.file("remix.json", JSON.stringify(remix, null, 4));
-                        // Generate the modified zip blob
-                        return zip.generateAsync({
-                            type: "blob"
+        if (fileInput == "none") {
+            fileInput = document.getElementById('riqFileInput');
+        }
+        
+        trackNumber = document.getElementById('trackNumber').value;
+        beatOffset = document.getElementById('beatOffset').value;
+        msOffset = document.getElementById('msOffset').value;
+    
+        if (fileInput.files.length > 0) {
+            document.getElementById('downloadButton').style.display = 'none';
+            document.getElementById('useModifiedAsInput').style.display = 'none';
+    
+            const file = fileInput.files[0];
+            fileName = file.name;
+    
+            JSZip.loadAsync(file) // read the content of the .riq file
+            .then(function(zip) {
+                // Check if remix.json exists in the zip
+                if (zip.file("remix.json")) {
+                    return zip.file("remix.json").async("string") // Read the remix.json content
+                        .then(function(data) {
+                            // Parse the JSON data, modify it, and replace the content
+                            const cleanedData = data.replace(/^\ufeff/, '');
+                            let remix = JSON.parse(cleanedData);
+                            remix = modifyRemix(remix);
+    
+                            // Replace the old remix.json with the modified one
+                            zip.file("remix.json", JSON.stringify(remix, null, 4));
+    
+                            // Ensure Resources/Sprites folders exist
+                            if (!zip.folder("Resources")) {
+                                zip.folder("Resources");
+                            }
+    
+                            if (!zip.folder("Resources/Sprites")) {
+                                zip.folder("Resources/Sprites");
+                            }
+    
+                            // Call modifySprites to modify contents of the Sprites folder
+                            modifySprites(zip.folder("Resources/Sprites"));
+    
+                            // Generate the modified zip blob
+                            return zip.generateAsync({
+                                type: "blob"
+                            });
                         });
-                    });
-            } else {
-                throw new Error("remix.json not found in the zip file.");
-            }
-        })
-        .then(function(content) {
-            modifiedContent = content; // Save the modified content globally
-            modifiedContent.name = `modified ${fileName}`;
-            document.getElementById('downloadButton').style.display = 'block'; // Show download button
-            document.getElementById('useModifiedAsInput').style.display = 'block';
-        })
-        .catch(function(err) {
-            alert('Error modifying the file: ' + err.message);
-            console.log(err.message);
-        });
-    } else {
-        alert('Please select a .RIQ file to upload.');
+                } else {
+                    throw new Error("remix.json not found in the zip file.");
+                }
+            })
+            .then(function(content) {
+                modifiedContent = content; // Save the modified content globally
+                modifiedContent.name = `modified ${fileName}`;
+                document.getElementById('downloadButton').style.display = 'block'; // Show download button
+                document.getElementById('useModifiedAsInput').style.display = 'block';
+            })
+            .catch(function(err) {
+                alert('Error modifying the file: ' + err.message);
+                console.log(err.message);
+            });
+        } else {
+            alert('Please select a .RIQ file to upload.');
+        }
+}
+
+function modifySprites(spritesFolder) {
+    console.log("Modifying Sprites folder...");
+    
+    for (let i = 0; i < frameList.length; i++) {
+        const fileObject = frameList[i];
+        if (fileObject) {
+            // Directly add the File object to the sprites folder
+            spritesFolder.file(fileObject.name, fileObject);
+            //console.log(`Added file: ${fileObject.name} to Sprites folder`);
+        }
     }
 }
 
@@ -219,16 +275,18 @@ async function processVideo(file, targetWidth, targetHeight, chromaKeyRgb, fps) 
         const currentImageData = ctx.getImageData(0, 0, targetWidth, targetHeight);
 
         let isDuplicate = false;
-        for (let i = 0; i < uniqueImageDataList.length; i++) {
-            const diffScore = calculateDifferenceScore(currentImageData, uniqueImageDataList[i]);
-            if (diffScore < differenceThreshold) {
-                frameIndexList.push(i);
-                isDuplicate = true;
-                console.log(`diffScore: ${diffScore}, threshold: ${differenceThreshold}`);
-                break;
+        if (differenceThreshold > 0) {
+            console.log("ran")
+            for (let i = 0; i < uniqueImageDataList.length; i++) {
+                const diffScore = calculateDifferenceScore(currentImageData, uniqueImageDataList[i]);
+                if (diffScore < differenceThreshold) {
+                    frameIndexList.push(i);
+                    isDuplicate = true;
+                    console.log(`diffScore: ${diffScore}, threshold: ${differenceThreshold}`);
+                    break;
+                }
             }
         }
-
         if (!isDuplicate) {
             const uniqueIndex = uniqueFrames.length;
             uniqueFrames.push(ctx.getImageData(0, 0, targetWidth, targetHeight));
@@ -308,7 +366,7 @@ function applyChromaKey(ctx, width, height, chromaKeyRgb, threshold = 50) {
 async function extractFramesAsPNGs(file, targetWidth, targetHeight, fps, chromaKeyColor) {
     const canvas = document.getElementById('frameCanvas');
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    const uniqueFrames = [];
+    const tempFrames = []; // Temporary storage for frames with indices
     const frameIndexList = [];
     const uniqueImageDataList = [];
     const chromaKeyRgb = hexToRgb(chromaKeyColor);
@@ -331,12 +389,15 @@ async function extractFramesAsPNGs(file, targetWidth, targetHeight, fps, chromaK
     const inputThreshold = parseFloat(document.getElementById("dtInput").value, 10);
     const differenceThreshold = (!isNaN(inputThreshold) ? inputThreshold / 100 : 0.001); // Use input or fallback
 
-
     async function processFrame() {
         if (videoElement.currentTime >= videoElement.duration) {
-            console.log('All frames processed. Total unique frames:', uniqueFrames.length);
+            // Sort tempFrames based on the original index
+            tempFrames.sort((a, b) => a.index - b.index);
+
+            console.log('All frames processed. Total unique frames:', tempFrames.length);
             console.log('Frame index list:', frameIndexList);
-            saveFramesAsFiles(uniqueFrames);
+            imageIndexList = frameIndexList
+            saveFramesAsFiles(tempFrames);
             return;
         }
 
@@ -350,27 +411,27 @@ async function extractFramesAsPNGs(file, targetWidth, targetHeight, fps, chromaK
 
         // Check for similarity with existing unique frames
         let isDuplicate = false;
-        for (let i = 0; i < uniqueImageDataList.length; i++) {
-            const diffScore = calculateDifferenceScore(currentImageData, uniqueImageDataList[i]);
-            if (diffScore < differenceThreshold) {
-                frameIndexList.push(i);
-                isDuplicate = true;
-                break;
+        if (differenceThreshold > 0) {
+            for (let i = 0; i < uniqueImageDataList.length; i++) {
+                const diffScore = calculateDifferenceScore(currentImageData, uniqueImageDataList[i]);
+                if (diffScore < differenceThreshold) {
+                    frameIndexList.push(i); // Add the index of the existing unique frame
+                    isDuplicate = true;
+                    break;
+                }
             }
         }
-
         if (!isDuplicate) {
             // Save the frame as a unique PNG blob
-            canvas.toBlob((blob) => {
-                if (blob && blob.size > 0) {
-                    const uniqueIndex = uniqueFrames.length;
-                    uniqueFrames.push({ index: uniqueIndex, blob });
-                    uniqueImageDataList.push(currentImageData); // Store unique frame data
-                    frameIndexList.push(uniqueIndex);
-                } else {
-                    console.warn('Blob creation failed or is empty for frame');
-                }
-            }, 'image/png');
+            const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+            if (blob && blob.size > 0) {
+                const uniqueIndex = uniqueImageDataList.length; // Correct unique index
+                tempFrames.push({ index: processedFrames, blob }); // Store with original index
+                uniqueImageDataList.push(currentImageData); // Store unique frame data
+                frameIndexList.push(uniqueIndex); // Add the index of this unique frame
+            } else {
+                console.warn('Blob creation failed or is empty for frame');
+            }
         }
 
         // Update progress
@@ -388,6 +449,7 @@ async function extractFramesAsPNGs(file, targetWidth, targetHeight, fps, chromaK
     // Start processing frames
     videoElement.currentTime = 0;
 }
+
 
 function calculateDifferenceScore(imageData1, imageData2) {
     const data1 = imageData1.data;
@@ -411,13 +473,27 @@ function calculateDifferenceScore(imageData1, imageData2) {
     return totalDifference / maxDifference;
 }
 
-function saveFramesAsFiles(frameList) {
+function saveFramesAsFiles(fList) {
     const updatedFrameList = [];
-
-    frameList.forEach((frame) => {
+    fList.forEach((frame, index) => {
         if (frame.blob) {
             const fileName = `frame_${frame.index + 1}.png`;
             const file = new File([frame.blob], fileName, { type: 'image/png' });
+
+            // Save the first frame as a test image
+            if (index === 0) {
+                const testImageFileName = 'test_image.png';
+                const testImageFile = new File([frame.blob], testImageFileName, { type: 'image/png' });
+
+                // Save or process the test image as needed
+                console.log(`Test image saved: ${testImageFileName}`);
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(testImageFile);
+                a.download = testImageFileName;
+                a.click();
+                URL.revokeObjectURL(a.href);
+            }
+
             updatedFrameList.push(file);
         } else {
             console.warn(`Skipping corrupted or empty frame at index ${frame.index}`);
@@ -425,13 +501,15 @@ function saveFramesAsFiles(frameList) {
     });
 
     // Replace the original frameList with the updated one
-    frameList.length = 0; // Clear the existing array
+    frameList.length = 0;
     updatedFrameList.forEach((file) => frameList.push(file));
 
     console.log('Frames saved as File objects in frameList:', frameList);
 
     document.getElementById('loadingIndicator').style.display = 'none';
 }
+
+
 
 function downloadFramesAsZip(frameList) {
     const zip = new JSZip();
