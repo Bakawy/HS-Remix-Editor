@@ -5,6 +5,7 @@ let trackNumber;
 let pitchShift;
 let beatOffset;
 let msOffset;
+let frameFiles = [];
 
 document.getElementById('trackNumber').oninput = function() {
     document.getElementById('trackNumberValue').textContent = this.value;
@@ -335,7 +336,7 @@ async function extractFramesAsPNGs(file, targetWidth, targetHeight, fps, chromaK
         if (videoElement.currentTime >= videoElement.duration) {
             console.log('All frames processed. Total unique frames:', uniqueFrames.length);
             console.log('Frame index list:', frameIndexList);
-            downloadFramesAsZip(uniqueFrames);
+            saveFramesAsFiles(uniqueFrames);
             return;
         }
 
@@ -408,6 +409,28 @@ function calculateDifferenceScore(imageData1, imageData2) {
     // Normalize by the total number of pixels
     const maxDifference = data1.length * 255;
     return totalDifference / maxDifference;
+}
+
+function saveFramesAsFiles(frameList) {
+    const updatedFrameList = [];
+
+    frameList.forEach((frame) => {
+        if (frame.blob) {
+            const fileName = `frame_${frame.index + 1}.png`;
+            const file = new File([frame.blob], fileName, { type: 'image/png' });
+            updatedFrameList.push(file);
+        } else {
+            console.warn(`Skipping corrupted or empty frame at index ${frame.index}`);
+        }
+    });
+
+    // Replace the original frameList with the updated one
+    frameList.length = 0; // Clear the existing array
+    updatedFrameList.forEach((file) => frameList.push(file));
+
+    console.log('Frames saved as File objects in frameList:', frameList);
+
+    document.getElementById('loadingIndicator').style.display = 'none';
 }
 
 function downloadFramesAsZip(frameList) {
