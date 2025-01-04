@@ -30,7 +30,8 @@ function modifyRemix(remix) {
     const width = parseFloat(document.getElementById("width").value, 10);
     const height = parseFloat(document.getElementById("height").value, 10);
     let beat = parseFloat(beatOffset) + (parseFloat(msOffset) / 1000) / (60 / bpm);
-    for (const index in imageIndexList) {
+    for (let i = 0; i < imageIndexList.length; i++) {
+        const index = imageIndexList[i]
         const imageFile = frameList[index]
         if (!(imageFile)) {continue;}
         let iN = imageFile.name
@@ -393,34 +394,38 @@ async function extractFramesAsPNGs(file, targetWidth, targetHeight, fps, chromaK
         if (videoElement.currentTime >= videoElement.duration) {
             // Sort tempFrames based on the original index
             tempFrames.sort((a, b) => a.index - b.index);
-
+    
             console.log('All frames processed. Total unique frames:', tempFrames.length);
             console.log('Frame index list:', frameIndexList);
-            imageIndexList = frameIndexList
+            imageIndexList = frameIndexList;
             saveFramesAsFiles(tempFrames);
             return;
         }
-
+    
         ctx.drawImage(videoElement, 0, 0, targetWidth, targetHeight);
-
+    
         // Apply chroma key effect
         applyChromaKey(ctx, targetWidth, targetHeight, chromaKeyRgb);
-
+    
         // Get frame data
         const currentImageData = ctx.getImageData(0, 0, targetWidth, targetHeight);
-
+    
         // Check for similarity with existing unique frames
         let isDuplicate = false;
         if (differenceThreshold > 0) {
             for (let i = 0; i < uniqueImageDataList.length; i++) {
                 const diffScore = calculateDifferenceScore(currentImageData, uniqueImageDataList[i]);
+                //console.log(`Frame ${processedFrames}: diffScore with unique frame ${i} = ${diffScore}`);
+    
                 if (diffScore < differenceThreshold) {
+                    console.log(`Frame ${processedFrames} is a duplicate of frame ${i}`);
                     frameIndexList.push(i); // Add the index of the existing unique frame
                     isDuplicate = true;
                     break;
                 }
             }
         }
+    
         if (!isDuplicate) {
             // Save the frame as a unique PNG blob
             const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
@@ -429,17 +434,18 @@ async function extractFramesAsPNGs(file, targetWidth, targetHeight, fps, chromaK
                 tempFrames.push({ index: processedFrames, blob }); // Store with original index
                 uniqueImageDataList.push(currentImageData); // Store unique frame data
                 frameIndexList.push(uniqueIndex); // Add the index of this unique frame
+                //console.log(`Frame ${processedFrames} added as unique frame ${uniqueIndex}`);
             } else {
                 console.warn('Blob creation failed or is empty for frame');
             }
         }
-
+    
         // Update progress
         processedFrames++;
         const progressPercentage = Math.min(100, ((processedFrames / totalFrames) * 100).toFixed(2));
         document.getElementById('progressBar').style.width = `${progressPercentage}%`;
         document.getElementById('progressText').textContent = `${progressPercentage}%`;
-
+    
         // Move to the next frame
         videoElement.currentTime += frameInterval;
     }
