@@ -18,6 +18,10 @@ document.getElementById('trackNumber').oninput = function() {
     document.getElementById('trackNumberValue').textContent = this.value;
 };
 
+chromaKeyToggle.addEventListener('change', () => {
+    document.getElementById('chromaKeyColor').disabled = !chromaKeyToggle.checked;
+});
+
 document.getElementById('layer').oninput = function() {
     document.getElementById('layerValue').textContent = this.value;
 };
@@ -274,9 +278,9 @@ async function processVideo(file, targetWidth, targetHeight, chromaKeyRgb, fps) 
         }
 
         ctx.drawImage(videoElement, 0, 0, targetWidth, targetHeight);
-
-        applyChromaKey(ctx, targetWidth, targetHeight, chromaKeyRgb);
-
+        if (document.getElementById('chromaKeyToggle').checked) {
+            applyChromaKey(ctx, targetWidth, targetHeight, chromaKeyRgb);
+        }
         const currentImageData = ctx.getImageData(0, 0, targetWidth, targetHeight);
 
         let isDuplicate = false;
@@ -408,7 +412,9 @@ async function extractFramesAsPNGs(file, targetWidth, targetHeight, fps, chromaK
         ctx.drawImage(videoElement, 0, 0, targetWidth, targetHeight);
     
         // Apply chroma key effect
-        applyChromaKey(ctx, targetWidth, targetHeight, chromaKeyRgb);
+        if (document.getElementById('chromaKeyToggle').checked) {
+            applyChromaKey(ctx, targetWidth, targetHeight, chromaKeyRgb);
+        }
     
         // Get frame data
         const currentImageData = ctx.getImageData(0, 0, targetWidth, targetHeight);

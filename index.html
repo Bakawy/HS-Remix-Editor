@@ -56,6 +56,10 @@
         <div>
             <label for="chromaKeyColor">Chroma Key: </label>
             <input type="color" id="chromaKeyColor" value="#00ff00">
+            <label for="chromaKeyToggle">
+                <input type="checkbox" id="chromaKeyToggle" checked>
+                Enable Chroma Key
+            </label>
         </div>
         <div>
             <label for="fpsInput">FPS: </label>
@@ -70,6 +74,10 @@
             <button id="extractFramesButton">Que frames</button>
         </div>
         <button id="applyChangesButton">Apply Changes</button>
+        <p>
+            Apply Changes - Shows the video with the effects applied<br>
+            Que Frames - Prepares the images to be added to the remix
+        </p>
         <button id="downloadVideoButton" style="display:none;" onclick="downloadEditedVideo()">Download Edited Video</button>
         <div class="loading-indicator" id="loadingIndicator">
             <p>Processing... Please wait.</p>
