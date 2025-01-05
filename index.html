@@ -66,9 +66,12 @@
             <input type="number" id="fpsInput" placeholder="e.g., 30">
         </div>
         <div>
-            <label for="fpsInput">differenceThreshold: </label>
+            <label for="fpsInput">Difference Threshold: </label>
             <input type="number" id="dtInput" placeholder="e.g., 0.1">%<br>
-            <p>How different the colors of 2 images are. If its greater than this value, it will be considered as a different image</p>
+            <p>
+                How different two frames should be to be considered as a different frame.<br>
+                Used for reusing frames to save space.
+            </p>
         </div>
         <div>
             <button id="extractFramesButton">Que frames</button>
