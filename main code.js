@@ -18,6 +18,10 @@ document.getElementById('trackNumber').oninput = function() {
     document.getElementById('trackNumberValue').textContent = this.value;
 };
 
+document.getElementById('opacity').oninput = function() {
+    document.getElementById('opacityValue').textContent = `${this.value}%`;
+};
+
 chromaKeyToggle.addEventListener('change', () => {
     document.getElementById('chromaKeyColor').disabled = !chromaKeyToggle.checked;
 });
@@ -225,6 +229,7 @@ document.getElementById('applyChangesButton').addEventListener('click', async ()
         const chromaKeyColor = document.getElementById("chromaKeyColor").value;
         const chromaKeyRgb = hexToRgb(chromaKeyColor);
         const fps = parseInt(document.getElementById("fpsInput").value, 10) || 30;
+        const opacity = parseInt(document.getElementById("opacity").value, 10) || 100;
 
         if (!videoInput.files.length) {
             alert("Please select a video file.");
@@ -234,10 +239,10 @@ document.getElementById('applyChangesButton').addEventListener('click', async ()
         document.getElementById('loadingIndicator').style.display = 'block';
 
         const file = videoInput.files[0];
-        processVideo(file, targetWidth, targetHeight, chromaKeyRgb, fps);
+        processVideo(file, targetWidth, targetHeight, chromaKeyRgb, fps, opacity);
 });
 
-async function processVideo(file, targetWidth, targetHeight, chromaKeyRgb, fps) {
+async function processVideo(file, targetWidth, targetHeight, chromaKeyRgb, fps, opacity) {
     const canvas = document.getElementById('frameCanvas');
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     const videoPreview = document.getElementById('videoPreview');
@@ -278,6 +283,9 @@ async function processVideo(file, targetWidth, targetHeight, chromaKeyRgb, fps) 
         }
 
         ctx.drawImage(videoElement, 0, 0, targetWidth, targetHeight);
+        if (opacity < 100) {
+            adjustOpacity(ctx, targetWidth, targetHeight, opacity);
+        }
         if (document.getElementById('chromaKeyToggle').checked) {
             applyChromaKey(ctx, targetWidth, targetHeight, chromaKeyRgb);
         }
@@ -285,12 +293,18 @@ async function processVideo(file, targetWidth, targetHeight, chromaKeyRgb, fps) 
 
         let isDuplicate = false;
         if (differenceThreshold > 0) {
+        // Draw the current frame onto the canvas
             for (let i = 0; i < uniqueImageDataList.length; i++) {
+
+        // Apply chroma key effect if enabled
                 const diffScore = calculateDifferenceScore(currentImageData, uniqueImageDataList[i]);
                 if (diffScore < differenceThreshold) {
                     frameIndexList.push(i);
+
+        // Get the image data of the current frame
                     isDuplicate = true;
                     console.log(`diffScore: ${diffScore}, threshold: ${differenceThreshold}`);
+        // Determine if the frame is a duplicate
                     break;
                 }
             }
@@ -303,6 +317,8 @@ async function processVideo(file, targetWidth, targetHeight, chromaKeyRgb, fps) 
         }
 
         // Update progress bar
+
+        // If the frame is unique, store it
         const processedFrames = videoElement.currentTime * fps;
         const progressPercentage = Math.min(100, ((processedFrames / totalFrames) * 100).toFixed(2));
         progressBar.style.width = `${progressPercentage}%`;
@@ -310,12 +326,14 @@ async function processVideo(file, targetWidth, targetHeight, chromaKeyRgb, fps) 
 
         videoElement.currentTime += frameInterval;
     }
+        // Update the progress bar
 
     videoElement.addEventListener('seeked', processFrame);
 
     videoElement.currentTime = 0;
 }
 
+        // Move to the next frame
 async function reassembleVideoFromFrames(canvas, fps, uniqueFrames, frameIndexList, videoPreview) {
     const ctx = canvas.getContext('2d');
     const stream = canvas.captureStream(fps);
@@ -347,6 +365,22 @@ async function reassembleVideoFromFrames(canvas, fps, uniqueFrames, frameIndexLi
     recorder.stop();
 }
 
+function adjustOpacity(ctx, width, height, percentage) {
+    const imageData = ctx.getImageData(0, 0, width, height, {});
+    const data = imageData.data;
+
+    // Clamp the percentage to the range [0, 100]
+    const factor = Math.max(0, Math.min(percentage, 100)) / 100;
+
+    for (let i = 0; i < data.length; i += 4) {
+        // Scale the alpha channel (data[i + 3]) by the factor
+        data[i + 3] = Math.floor(data[i + 3] * factor);
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+}
+
+
 function applyChromaKey(ctx, width, height, chromaKeyRgb, threshold = 50) {
     const imageData = ctx.getImageData(0, 0, width, height, {});
     const data = imageData.data;
@@ -371,7 +405,7 @@ function applyChromaKey(ctx, width, height, chromaKeyRgb, threshold = 50) {
     ctx.putImageData(imageData, 0, 0);
 }
 
-async function extractFramesAsPNGs(file, targetWidth, targetHeight, fps, chromaKeyColor) {
+async function extractFramesAsPNGs(file, targetWidth, targetHeight, fps, chromaKeyColor, opacity) {
     const canvas = document.getElementById('frameCanvas');
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     const tempFrames = []; // Temporary storage for frames with indices
@@ -412,6 +446,9 @@ async function extractFramesAsPNGs(file, targetWidth, targetHeight, fps, chromaK
         ctx.drawImage(videoElement, 0, 0, targetWidth, targetHeight);
     
         // Apply chroma key effect
+        if (opacity < 100) {
+            adjustOpacity(ctx, targetWidth, targetHeight, opacity);
+        }
         if (document.getElementById('chromaKeyToggle').checked) {
             applyChromaKey(ctx, targetWidth, targetHeight, chromaKeyRgb);
         }
@@ -576,6 +613,7 @@ document.getElementById("extractFramesButton").addEventListener("click", () => {
     const targetHeight = parseInt(document.getElementById("resolutionHeight").value, 10) || parseInt(document.getElementById('resolutionHeight').placeholder);
     const fps = parseInt(document.getElementById("fpsInput").value, 10) || 30;
     const chromaKeyColor = document.getElementById("chromaKeyColor").value;
+    const opacity = parseInt(document.getElementById("opacity").value, 10) || 100;    
 
     if (!videoInput.files.length) {
         alert("Please select a video file.");
@@ -585,7 +623,7 @@ document.getElementById("extractFramesButton").addEventListener("click", () => {
     document.getElementById('loadingIndicator').style.display = 'block';
 
     const file = videoInput.files[0];
-    extractFramesAsPNGs(file, targetWidth, targetHeight, fps, chromaKeyColor);
+    extractFramesAsPNGs(file, targetWidth, targetHeight, fps, chromaKeyColor, opacity);
 });
 
 
