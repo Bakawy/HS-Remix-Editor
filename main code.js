@@ -1,8 +1,5 @@
 /*
-4.3418
-1.4319
-1.25
-1.25
+Last Change: Added check last for difference threshold
 */
 //Main Section
 let modifiedContent = null; // This will hold the modified blob
@@ -22,8 +19,12 @@ document.getElementById('opacity').oninput = function() {
     document.getElementById('opacityValue').textContent = `${this.value}%`;
 };
 
-chromaKeyToggle.addEventListener('change', () => {
-    document.getElementById('chromaKeyColor').disabled = !chromaKeyToggle.checked;
+document.getElementById('chromaKeyToggle').addEventListener('change', () => {
+    document.getElementById('chromaKeyColor').disabled = !document.getElementById('chromaKeyToggle').checked;
+});
+
+document.getElementById('checkLastToggle').addEventListener('change', () => {
+    document.getElementById('checkLast').disabled = document.getElementById('checkLastToggle').checked;
 });
 
 document.getElementById('layer').oninput = function() {
@@ -291,11 +292,12 @@ async function processVideo(file, targetWidth, targetHeight, chromaKeyRgb, fps, 
         }
         const currentImageData = ctx.getImageData(0, 0, targetWidth, targetHeight);
 
+        let checkLast = parseInt(document.getElementById("checkLast").value, 10) || 10;
+        if (document.getElementById('checkLastToggle').checked) {checkLast = uniqueImageDataList.length}
         let isDuplicate = false;
         if (differenceThreshold > 0) {
         // Draw the current frame onto the canvas
-            for (let i = 0; i < uniqueImageDataList.length; i++) {
-
+            for (let i = clamp(uniqueImageDataList.length - checkLast, 0, Infinity); i < uniqueImageDataList.length; i++) {
         // Apply chroma key effect if enabled
                 const diffScore = calculateDifferenceScore(currentImageData, uniqueImageDataList[i]);
                 if (diffScore < differenceThreshold) {
@@ -457,9 +459,11 @@ async function extractFramesAsPNGs(file, targetWidth, targetHeight, fps, chromaK
         const currentImageData = ctx.getImageData(0, 0, targetWidth, targetHeight);
     
         // Check for similarity with existing unique frames
+        let checkLast = parseInt(document.getElementById("checkLast").value, 10) || 10;
+        if (document.getElementById('checkLastToggle').checked) {checkLast = uniqueImageDataList.length}
         let isDuplicate = false;
         if (differenceThreshold > 0) {
-            for (let i = 0; i < uniqueImageDataList.length; i++) {
+            for (let i = clamp(uniqueImageDataList.length - checkLast, 0, Infinity); i < uniqueImageDataList.length; i++) {
                 const diffScore = calculateDifferenceScore(currentImageData, uniqueImageDataList[i]);
                 //console.log(`Frame ${processedFrames}: diffScore with unique frame ${i} = ${diffScore}`);
     
@@ -634,4 +638,8 @@ function hexToRgb(hex) {
         g: (bigint >> 8) & 255,
         b: bigint & 255,
     };
+}
+
+function clamp(number, min, max) {
+    return Math.min(Math.max(number, min), max);
 }

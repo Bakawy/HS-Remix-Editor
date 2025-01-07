@@ -70,9 +70,13 @@
             <label for="fpsInput">FPS: </label>
             <input type="number" id="fpsInput" placeholder="30">
         </div>
+        <br>
         <div>
-            <label for="fpsInput">Difference Threshold: </label>
-            <input type="number" id="dtInput" placeholder="0.1">%
+            <label for="dtInput">Difference Threshold: </label>
+            <input type="number" id="dtInput" placeholder="0.1">%<br>
+            <label for="checkLast">Check Last: </label>
+            <input type="number" id="checkLast" placeholder="10" disabled="true"> frames
+            <input type="checkbox" id="checkLastToggle" checked> Check All Frames
             <p>
                 How similar two frames should be to be considered as a different frame.<br>
                 Used for reusing frames to save space. Bigger Number = Less Frames
@@ -101,7 +105,7 @@
         <label for="trackNumber">Track Number:</label>
         <span id="trackNumberValue">1</span>
         <input type="range" id="trackNumber" min="0" max="10" step="1" value="1">
-        <p>Track 0: Dont show on screen</p>
+        <p>Track 0: Dont show blocks on screen</p>
         <label for="layer">Layer:</label>
         <span id="layerValue">0</span>
         <input type="range" id="layer" min="-100" max="100" step="1" value="0"><br>
