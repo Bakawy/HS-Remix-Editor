@@ -7,7 +7,7 @@ let beatOffset;
 let msOffset;
 let frameList = [];
 let imageIndexList = [];
-const errorText = "Bakawi messed up somehow \n";
+const errorText = "Bakawi messed up somehow \nSend him this error message: \n";
 
 window.onload = applySavedTheme;
 
