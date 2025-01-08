@@ -1,6 +1,3 @@
-/*
-Last Change: Added check last for difference threshold
-*/
 //Main Section
 let modifiedContent = null; // This will hold the modified blob
 let fileName = "";
@@ -23,16 +20,17 @@ document.getElementById("themeToggleButton").addEventListener("click", () => {
         if (root.classList.contains("dark-mode")) {
             root.classList.remove("dark-mode");
             document.getElementById("videoBGColor").value = "#ffffff"; // Default to white for light mode
-            setCookie("theme", "light", 30); // Save as light mode
+            saveThemeToLocalStorage("light"); // Save as light mode
         } else {
             root.classList.add("dark-mode");
             document.getElementById("videoBGColor").value = "#000000"; // Default to black for dark mode
-            setCookie("theme", "dark", 30); // Save as dark mode
+            saveThemeToLocalStorage("dark"); // Save as dark mode
         }
         updateVideoEditorBackground();
     } catch (e) {
         alert(errorText + e.stack);
     }
+});
 });
 
 document.getElementById('trackNumber').oninput = function() {
@@ -795,35 +793,17 @@ function clamp(number, min, max) {
     }
 }
 
-function setCookie(name, value, days) {
+function saveThemeToLocalStorage(theme) {
     try {
-        const date = new Date();
-        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-        document.cookie = `${name}=${value};expires=${date.toUTCString()};path=/`;
+        localStorage.setItem("theme", theme);
     } catch (e) {
         alert(errorText + e.stack);
     }
 }
-
-function getCookie(name) {
-    try {
-        const cookies = document.cookie.split("; ");
-        for (const cookie of cookies) {
-            const [key, value] = cookie.split("=");
-            if (key === name) {
-                return value;
-            }
-        }
-        return null;
-    } catch (e) {
-        alert(errorText + e.stack);
-    }
-}
-
 // Function to apply the saved theme on page load
 function applySavedTheme() {
     try {
-        const savedTheme = getCookie("theme");
+        const savedTheme = localStorage.getItem("theme");
         const root = document.documentElement;
 
         if (savedTheme === "dark") {
