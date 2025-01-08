@@ -31,7 +31,6 @@ document.getElementById("themeToggleButton").addEventListener("click", () => {
         alert(errorText + e.stack);
     }
 });
-});
 
 document.getElementById('trackNumber').oninput = function() {
     try {
