@@ -11,6 +11,30 @@ let msOffset;
 let frameList = [];
 let imageIndexList = [];
 const errorText = "Bakawi messed up somehow \n";
+
+window.onload = applySavedTheme;
+
+document.getElementById("videoBGColor").addEventListener("change", updateVideoEditorBackground);
+
+document.getElementById("themeToggleButton").addEventListener("click", () => {
+    try {
+        const root = document.documentElement;
+
+        if (root.classList.contains("dark-mode")) {
+            root.classList.remove("dark-mode");
+            document.getElementById("videoBGColor").value = "#ffffff"; // Default to white for light mode
+            setCookie("theme", "light", 30); // Save as light mode
+        } else {
+            root.classList.add("dark-mode");
+            document.getElementById("videoBGColor").value = "#000000"; // Default to black for dark mode
+            setCookie("theme", "dark", 30); // Save as dark mode
+        }
+        updateVideoEditorBackground();
+    } catch (e) {
+        alert(errorText + e.stack);
+    }
+});
+
 document.getElementById('trackNumber').oninput = function() {
     try {
         document.getElementById('trackNumberValue').textContent = this.value;
@@ -50,6 +74,20 @@ document.getElementById('layer').oninput = function() {
         alert(errorText + e.stack)
     }
 };
+
+function updateVideoEditorBackground() {
+    try {
+        const videoEditor = document.getElementsByClassName("video-editor")[0];
+        const bgColor = document.getElementById("videoBGColor").value;
+        videoEditor.style.backgroundColor = bgColor;
+
+        // Adjust text color for contrast
+        const invertedColor = invertColor(bgColor);
+        videoEditor.style.color = invertedColor;
+    } catch (e) {
+        alert(errorText + e.stack);
+    }
+}
 
 function modifyRemix(remix) {
     try {
@@ -754,5 +792,49 @@ function clamp(number, min, max) {
         return Math.min(Math.max(number, min), max);
     } catch (e) {
         alert(errorText + e.stack)
+    }
+}
+
+function setCookie(name, value, days) {
+    try {
+        const date = new Date();
+        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+        document.cookie = `${name}=${value};expires=${date.toUTCString()};path=/`;
+    } catch (e) {
+        alert(errorText + e.stack);
+    }
+}
+
+function getCookie(name) {
+    try {
+        const cookies = document.cookie.split("; ");
+        for (const cookie of cookies) {
+            const [key, value] = cookie.split("=");
+            if (key === name) {
+                return value;
+            }
+        }
+        return null;
+    } catch (e) {
+        alert(errorText + e.stack);
+    }
+}
+
+// Function to apply the saved theme on page load
+function applySavedTheme() {
+    try {
+        const savedTheme = getCookie("theme");
+        const root = document.documentElement;
+
+        if (savedTheme === "dark") {
+            root.classList.add("dark-mode");
+            document.getElementById("videoBGColor").value = "#000000"; // Set default background to black for dark mode
+        } else {
+            root.classList.remove("dark-mode");
+            document.getElementById("videoBGColor").value = "#ffffff"; // Set default background to white for light mode
+        }
+        updateVideoEditorBackground();
+    } catch (e) {
+        alert(errorText + e.stack);
     }
 }

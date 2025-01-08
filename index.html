@@ -8,14 +8,30 @@
 <script async src="https://docs.opencv.org/4.x/opencv.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
+    :root {
+        --background-color: #ffffff;
+        --text-color: #000000;
+    }
+
+    .dark-mode {
+        --background-color: #000000;
+        --text-color: #ffffff;
+    }
+
     .container {
         display: flex;
         justify-content: space-between;
     }
-    .options, .video-editor {
+    .options{
         width: 45%;
         padding: 20px;
         border: 1px solid #ccc;
+    }
+    .video-editor {
+        width: 45%;
+        padding: 20px;
+        border: 1px solid #ccc;
+        background-color: var(--background-color);
     }
     .upload {
         margin-bottom: 20px;
@@ -26,9 +42,19 @@
         margin-top: 10px;
         font-weight: bold;
     }
+
+    body {
+        background-color: var(--background-color);
+        color: var(--text-color);
+        transition: background-color 0.3s, color 0.3s;
+    }
 </style>
 </head>
 <body>
+    <div style="text-align: center; margin-bottom: 20px;">
+        <button id="themeToggleButton">Toggle Dark/Light Mode</button>
+    </div>
+    
 <div class="container">
     <div class="upload">
         <h1>Upload and Modify RIQ</h1>
