@@ -1,3 +1,4 @@
+//Last Change: Optimized block length
 //Main Section
 let modifiedContent = null; // This will hold the modified blob
 let fileName = "";
@@ -99,16 +100,27 @@ function modifyRemix(remix) {
         const width = parseFloat(document.getElementById("width").value, 10);
         const height = parseFloat(document.getElementById("height").value, 10);
         let beat = parseFloat(beatOffset) + (parseFloat(msOffset) / 1000) / (60 / bpm);
-        for (let i = 0; i < imageIndexList.length; i++) {
-            const index = imageIndexList[i]
+        const indexLength = []
+        let lastIndex = "None"
+        imageIndexList.forEach((index) => {
+            if (index == lastIndex) {
+                indexLength[indexLength.length - 1][1]++
+            } else {
+                indexLength.push([index, 1])
+            }
+            lastIndex = index
+        })
+        for (let i = 0; i < indexLength.length; i++) {
+            const index = indexLength[i][0]
+            const len = indexLength[i][1]
             const imageFile = frameList[index]
             if (!(imageFile)) {continue;}
             let iN = imageFile.name
             const imageName = imageFile.name.substring(0, iN.length - 4);
             remix["entities"] = remix["entities"].concat([
-                {"type":"riq__Entity","version":1,"datamodel":"vfx/display decal","beat":beat,"length":bpf,"dynamicData":{"track":track,"sprite":imageName,"ease":1,"layer":layer,"sX":0.0,"sY":0.0,"sWidth":1.0,"sHeight":1.0,"sColor":{"r":1.0,"g":1.0,"b":1.0,"a":1.0},"eX":xPos,"eY":yPos,"eWidth":width,"eHeight":height,"eColor":{"r":1.0,"g":1.0,"b":1.0,"a":1.0}}}
+                {"type":"riq__Entity","version":1,"datamodel":"vfx/display decal","beat":beat,"length":bpf * len,"dynamicData":{"track":track,"sprite":imageName,"ease":1,"layer":layer,"sX":0.0,"sY":0.0,"sWidth":1.0,"sHeight":1.0,"sColor":{"r":1.0,"g":1.0,"b":1.0,"a":1.0},"eX":xPos,"eY":yPos,"eWidth":width,"eHeight":height,"eColor":{"r":1.0,"g":1.0,"b":1.0,"a":1.0}}}
             ])
-            beat += bpf
+            beat += bpf * len
         }
         if (false) {
             const True = true
@@ -490,7 +502,6 @@ function adjustOpacity(ctx, width, height, percentage) {
     }
 }
 
-
 function applyChromaKey(ctx, width, height, chromaKeyRgb, threshold = 50) {
     try {
         const imageData = ctx.getImageData(0, 0, width, height, {});
@@ -626,7 +637,6 @@ async function extractFramesAsPNGs(file, targetWidth, targetHeight, fps, chromaK
     }
 }
 
-
 function calculateDifferenceScore(imageData1, imageData2) {
     try {
         const data1 = imageData1.data;
@@ -693,8 +703,6 @@ function saveFramesAsFiles(fList) {
     }
 }
 
-
-
 function downloadFramesAsZip(frameList) {
     try {
         const zip = new JSZip();
@@ -742,7 +750,6 @@ function hashImageData(imageData) {
     }
 }
 
-
 document.getElementById("extractFramesButton").addEventListener("click", () => {
     try {
         if (document.getElementById('loadingIndicator').style.display == 'block') {
@@ -769,7 +776,6 @@ document.getElementById("extractFramesButton").addEventListener("click", () => {
         alert(errorText + e.stack)
     }
 });
-
 
 function hexToRgb(hex) {
     try {
