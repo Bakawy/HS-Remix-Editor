@@ -666,9 +666,10 @@ function calculateDifferenceScore(imageData1, imageData2) {
 function saveFramesAsFiles(fList) {
     try {
         const updatedFrameList = [];
+        inputName = document.getElementById("imageFileName").value;
         fList.forEach((frame, index) => {
             if (frame.blob) {
-                const fileName = `frame_${frame.index + 1}.png`;
+                const fileName = `${inputName}_${frame.index + 1}.png`;
                 const file = new File([frame.blob], fileName, { type: 'image/png' });
 
                 // Save the first frame as a test image
