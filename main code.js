@@ -453,7 +453,13 @@ async function reassembleVideoFromFrames(canvas, fps, uniqueFrames, frameIndexLi
         const ctx = canvas.getContext('2d');
         const stream = canvas.captureStream(fps);
         const chunks = [];
-        const recorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
+        if (MediaRecorder.isTypeSupported('video/webm; codecs=vp9')) {
+            const recorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
+        } else {
+            alert("Sorry, your browser doesn't support 'video/webm; codecs=vp9'.\n(try using a Chromium based browser)");
+            return;
+        }
+
 
         recorder.ondataavailable = (event) => {
             if (event.data.size > 0) chunks.push(event.data);
