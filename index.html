@@ -3,10 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <title>Video to Remix</title>
+<link rel="icon" href="favicon.ico" type="image/x-icon">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 <script async src="https://docs.opencv.org/4.x/opencv.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/gif.js/dist/gif.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mp4box@0.5.2/dist/mp4box.all.min.js"></script>
 <style>
     :root {
         --background-color: #ffffff;
@@ -47,6 +51,15 @@
         background-color: var(--background-color);
         color: var(--text-color);
         transition: background-color 0.3s, color 0.3s;
+        font-family: Comic Sans MS;
+    }
+
+    #progressBar {
+        width: 0%;
+        height: 100%;
+        background: linear-gradient(90deg, #4caf50, #81c784);
+        border-radius: 5px;
+        transition: width 0.3s ease;
     }
 </style>
 </head>
@@ -59,7 +72,7 @@
     <div class="upload">
         <h1>Upload and Modify RIQ</h1>
         <input type="file" id="riqFileInput" accept=".riq">
-        <button onclick="loadAndModifyRIQ()">Load and add Video</button>
+        <button onclick="loadAndModifyRIQ()">Add Video</button>
         <button id="useModifiedAsInput" style="display:none;" onclick="useModifiedAsInput()">Add Video using Output as Input</button>
         <h2>Download Modified RIQ</h2>
         <button id="downloadButton" style="display:none;" onclick="downloadModifiedRIQ()">Download Modified .RIQ</button>
@@ -67,10 +80,20 @@
         <h4>How to use:</h4>
         <iframe width="400" height="225" src="https://www.youtube.com/embed/y0s6lv7E0rs">
         </iframe>
+        <p style="white-space: pre-line;">
+            TL;DW
+            1. Chart Remix
+            2. Upload your video in the <b><u>Video Editor</u></b>
+            3. Change all settings in the <b><u>Video Editor</u></b>
+            4. Press <b><u>Que Frames</u></b> and wait
+            5. Use test image in Heaven Studio to see where to place the video
+            6. Change the settings in <b><u>Options</u></b> to match the test image
+            7. Upload RIQ and press <b><u>Add Video</u></b>
+        </p>
     </div>
     <div class="video-editor">
         <h1>Video Editor</h1>
-        <input type="file" id="videoInput" accept="video/mp4">
+        <input type="file" id="videoInput" accept="video/*,image/gif,image/webp">
         background:<input type="color" id="videoBGColor" value="#ffffff"><br>
         <video id="videoPreview" controls style="width: 100%; margin-top: 10px;"></video>
         <div>
@@ -87,12 +110,7 @@
                 Enable Chroma Key
             </label>
         </div>
-        <p>I highly reccomend doing Chroma Key in a separate program and importing the video as webm</p>
-        <div>
-            <label for="opacity">Opacity: </label>
-            <span id="opacityValue">100%</span>
-            <input type="range" id="opacity" min="1" max="100" step="1" value="100">
-        </div>
+        <p>I highly reccomend doing chroma key in a separate program and importing the video as WebM</p>
         <div>
             <label for="fpsInput">FPS: </label>
             <input type="number" id="fpsInput" placeholder="30">
@@ -109,13 +127,29 @@
                 Used for reusing frames to save space. Bigger Number = Less Frames
             </p>
         </div>
+
+        <label>
+            <input type="radio" name="fileType" value="0" checked onchange="toggleSlider()">
+            PNG
+        </label>
+        <label>
+            <input type="radio" name="fileType" value="1" onchange="toggleSlider()">
+            JPG
+        </label><br>
+        <div id="jpgQualitySlider" style="display: none; margin-top: 10px;">
+            <label for="jpgQuality">JPG Quality:</label>
+            <input type="range" id="jpgQuality" name="jpgQuality" min="0" max="100" value="80">
+            <span id="qualityValue">80</span>
+        </div><br>
+
         <div>
-            <button id="extractFramesButton">Que frames</button>
+            <button id="extractFramesButton">Que frames</button> Prepares the images to be added to the remix
         </div>
+        <button id="applyChangesButton" style="display: none;">Apply Changes</button>
         <button id="applyChangesButton" style="display: none;">Apply Changes</button>
         <p>
             <!-- Apply Changes - Shows the video with the effects applied<br> -->
-            Prepares the images to be added to the remix
+            <!-- Que Frames - Prepares the images to be added to the remix --->
         </p>
         <button id="downloadVideoButton" style="display:none;" onclick="downloadEditedVideo()">Download Edited Video</button>
         <div class="loading-indicator" id="loadingIndicator">
@@ -130,30 +164,150 @@
     <div class="options">
         <h2>Options</h2>
         <label for="trackNumber">Track Number:</label>
-        <span id="trackNumberValue">1</span>
-        <input type="range" id="trackNumber" min="0" max="10" step="1" value="1">
-        <p>Track 0: Dont show blocks on screen</p>
+        <input type="number" id="trackNumber" value="1" style="width: 25%;"><br>
+
+        <label for="filterMode">Filter Mode:</label>
+        <select id="filterMode">
+            <option value="0">Nearest</option>
+            <option value="1">Bilinear</option>
+        </select><br>
+
         <label for="layer">Layer:</label>
-        <span id="layerValue">0</span>
-        <input type="range" id="layer" min="-100" max="100" step="1" value="0"><br>
-        <label for="xPos">X Position:</label>
-        <input type="number" id="xPos" value="0" min="-20" max="20"><br>
-        <label for="yPos">Y Position:</label>
-        <input type="number" id="yPos" value="0" min="-20" max="20"><br>
-        <label for="width">Width:</label>
-        <input type="number" id="width" value="1" min="-5" max="5"><br>
-        <label for="height">Height:</label>
-        <input type="number" id="height" value="1" min="-5" max="5"><br><br>
+        <input type="number" id="layer" value="0" style="width: 25%;"><br>
+
+        <label for="dLayer">Display Layer:</label>
+        <select id="dLayer">
+            <option value="0">Game</option>
+            <option value="1" selected>Decal</option>
+            <option value="2">Overlay</option>
+        </select><br>
+
+        <label for="easing">Easing:</label>
+        <select id="easing">
+            <option value="0">Linear</option>
+            <option value="1" selected>Instant</option>
+            <option value="2">EaseInQuad</option>
+            <option value="3">EaseOutQuad</option>
+            <option value="4">EaseInOutQuad</option>
+            <option value="5">EaseInCubic</option>
+            <option value="6">EaseOutCubic</option>
+            <option value="7">EaseInOutCubic</option>
+            <option value="8">EaseInQuart</option>
+            <option value="9">EaseOutQuart</option>
+            <option value="10">EaseInOutQuart</option>
+            <option value="11">EaseInQuint</option>
+            <option value="12">EaseOutQuint</option>
+            <option value="13">EaseInOutQuint</option>
+            <option value="14">EaseInSine</option>
+            <option value="15">EaseOutSine</option>
+            <option value="16">EaseInOutSine</option>
+            <option value="17">EaseInExpo</option>
+            <option value="18">EaseOutExpo</option>
+            <option value="19">EaseInOutExpo</option>
+            <option value="20">EaseInCirc</option>
+            <option value="21">EaseOutCirc</option>
+            <option value="22">EaseInOutCirc</option>
+            <option value="23">EaseInBounce</option>
+            <option value="24">EaseOutBounce</option>
+            <option value="25">EaseInOutBounce</option>
+            <option value="26">EaseInBack</option>
+            <option value="27">EaseOutBack</option>
+            <option value="28">EaseInOutBack</option>
+            <option value="29">EaseInElastic</option>
+            <option value="30">EaseOutElastic</option>
+            <option value="31">EaseInOutElastic</option>
+            <option value="32">Spring</option>
+            <option value="33">EaseOutInQuad</option>
+            <option value="34">EaseOutInCubic</option>
+            <option value="35">EaseOutInQuart</option>
+            <option value="36">EaseOutInQuint</option>
+            <option value="37">EaseOutInSine</option>
+            <option value="38">EaseOutInExpo</option>
+            <option value="39">EaseOutInCirc</option>
+            <option value="40">EaseOutInBounce</option>
+            <option value="41">EaseOutInBack</option>
+            <option value="42">EaseOutInElastic</option>
+        </select><br>
+
+
+        <div id="startOptions" style="display: none;">
+            <label for="StartxPos">Start X Position:</label>
+            <input type="number" id="StartxPos" value="0" style="width: 25%;"><br>
+
+            <label for="StartyPos">Start Y Position:</label>
+            <input type="number" id="StartyPos" value="0" style="width: 25%;"><br>
+
+            <label for="StartzPos">Start Z Position:</label>
+            <input type="number" id="StartzPos" value="0" style="width: 25%;"><br>
+
+            <label for="startWidth">Start Width:</label>
+            <input type="number" id="startWidth" value="1" style="width: 25%;"><br>
+
+            <label for="startHeight">Start Height:</label>
+            <input type="number" id="startHeight" value="1" style="width: 25%;"><br>
+
+            <label for="startRotation">Start Rotation:</label>
+            <input type="number" id="startRotation" value="0" style="width: 25%;"><br>
+            
+            <label for="startDecalColor">Start Color:</label>
+            <input type="color" id="startDecalColor" value="#ffffff"><br>
+            
+            <label for="startDecalAlpha">Start Alpha:</label>
+            <input type="number" id="startDecalAlpha" value="100" min="0" max="100" style="width: 25%;"><br><br>
+        </div>
+
+        <label for="xPos">End X Position:</label>
+        <input type="number" id="xPos" value="0" min="-20" max="20" style="width: 25%;"><br>
+
+        <label for="yPos">End Y Position:</label>
+        <input type="number" id="yPos" value="0" style="width: 25%;"><br>
+
+        <label for="zPos">End Z Position:</label>
+        <input type="number" id="zPos" value="0" style="width: 25%;"><br>
+
+        <label for="width">End Width:</label>
+        <input type="number" id="width" value="1" style="width: 25%;"><br>
+
+        <label for="height">End Height:</label>
+        <input type="number" id="height" value="1" style="width: 25%;"><br>
+
+        <label for="rotation">End Rotation:</label>
+        <input type="number" id="rotation" value="0" style="width: 25%;"><br>
+
+        <label for="decalColor">End Color:</label>
+        <input type="color" id="decalColor" value="#ffffff"><br>
+
+        <label for="decalAlpha">End Alpha:</label>
+        <input type="number" id="decalAlpha" value="100" min="0" max="100" style="width: 25%;"><br><br>
+
+        <label for="lengthToggle">Length Override:</label>
+        <input type="checkbox" id="lengthToggle">
+        <label for="length" id="lengthLabel" style="display: none;">Length: </label>
+        <input type="number" id="length" value="2" style="width: 25%; display: none;">
+        <label for="length" id="lengthLabel2" style="display: none;">Beats</label><br>
+
         <label for="beatOffset">Beat Offset:</label>
         <input type="number" id="beatOffset" value="0"><br>
-        <label for="msOffset">Milisecond Offset (based on initial bpm):</label>
+
+        <label for="msOffset">Milisecond Offset:</label>
         <input type="number" id="msOffset" value="0"><br><br>
+
         <label for="msOffset">Image File Name:</label>
         <input type="text" id="imageFileName" value="frame">_#<br><br>
+
+        <img src="sans.png" alt="Sans" width="16" height="15">
+        <input type="checkbox" id="sans">
+
     </div>
 </div>
-<script src="main code.js"></script>
-
+<script defer src="v2r.js"></script>
+<script>
+    function sendTo(filename) {
+      window.open(filename, '_blank');
+    }
+</script>
+<button onclick="sendTo('https://bakawy.github.io/Pico_Games/')">cool games I made</button>
+<button onclick="sendTo('polyremix.html')">SUPER SECRET BUTTON DONT CLICK</button>
 
 </body>
 </html>

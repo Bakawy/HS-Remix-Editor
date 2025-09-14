@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>PolyRemix Editor</title>
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <style>
+    .section-box {
+    width: 100px;
+    height: 100px;
+    border: 1px solid #aaa;
+    border-radius: 6px;
+    padding: 4px;
+    font-size: 11px;
+    background: #f0f0f0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    }
+    .section-box audio {
+    width: 100%;
+    height: 20px;
+    }
+    .section-box:active {
+        cursor: grabbing;
+    }
+    #sectionWrapper {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid #ccc;
+    padding: 5px;
+    }
+    
+    #sectionContainer {
+    display: flex;
+    flex-wrap: wrap;              /* Allow wrapping to next line */
+    flex-direction: row;          /* Left to right */
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px;
+    box-sizing: border-box;
+    max-width: 100%;
+    }
+    .section-box button {
+    padding: 2px 4px;
+    border: none;
+    background: #ddd;
+    cursor: pointer;
+    border-radius: 4px;
+    }
+    .section-box button:hover {
+    background: #ccc;
+    }
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: none;
+    }
+    </style>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script async src="https://docs.opencv.org/4.x/opencv.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/opus-media-recorder@5.0.5/OpusMediaRecorder.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/opus-media-recorder@5.0.5/encoderWorker.min.js"></script>
+</head>
+<body>
+    you clicked it >:(<br>
+    while you're here, insert a riq with beatmap sections<br>
+    Upload RIQ <input type="file" id="riqFileInput" accept=".riq">
+    <audio id="audioPlayer" controls style="display:none;"></audio>
+
+    <div id="sectionWrapper">
+        <button id="randomizeSectionsBtn">Randomize Order</button>
+        <div id="sectionContainer"></div>
+    </div>
+    <button onclick="rebuildRIQ(window.originalZip, window.originalRemix)">Rebuild RIQ</button>
+
+
+    <script>
+        function sendTo(filename) {
+        window.open(filename, '_blank');
+        }
+    </script>
+    <script defer src="polyremix.js"></script>
+    <button style="position: fixed; bottom: 0; right: 0;" id="rickrollBtn">EVEN MORE SECRET BUTTON DONT CLICK</button>
+    <video id="video" src="Rick Roll.mp4"></video>
+</body>
+</html>
