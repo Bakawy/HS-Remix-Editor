@@ -49,7 +49,6 @@ document.getElementById('easing').addEventListener('change', (e) => {
 });
 
 document.getElementById('lengthToggle').addEventListener('change', () => {
-    console.log(document.getElementById('lengthToggle').checked)
     if (document.getElementById('lengthToggle').checked) {
         document.getElementById('length').style.display = "inline-block";
         document.getElementById('lengthLabel').style.display = "inline-block";
@@ -467,72 +466,75 @@ function ease(num, func) {
 
 
 function loadAndModifyRIQ(fileInput = "none") {
-    try {
-        if (fileInput == "none") {
-            fileInput = document.getElementById('riqFileInput');
-        }
-        
-        trackNumber = document.getElementById('trackNumber').value;
-        beatOffset = document.getElementById('beatOffset').value;
-        msOffset = document.getElementById('msOffset').value;
+    if (fileInput == "none") {
+        fileInput = document.getElementById('riqFileInput');
+    }
     
-        if (fileInput.files.length > 0) {
-            document.getElementById('downloadButton').style.display = 'none';
-            document.getElementById('useModifiedAsInput').style.display = 'none';
-    
-            const file = fileInput.files[0];
-            fileName = file.name;
-    
-            JSZip.loadAsync(file) // read the content of the .riq file
-            .then(function(zip) {
-                // Check if remix.json exists in the zip
-                if (zip.file("remix.json")) {
-                    return zip.file("remix.json").async("string") // Read the remix.json content
-                        .then(function(data) {
-                            // Parse the JSON data, modify it, and replace the content
-                            const cleanedData = data.replace(/^\ufeff/, '');
-                            let remix = JSON.parse(cleanedData);
-                            remix = modifyRemix(remix);
-    
-                            // Replace the old remix.json with the modified one
-                            zip.file("remix.json", JSON.stringify(remix, null, 4));
-    
-                            // Ensure Resources/Sprites folders exist
-                            if (!zip.folder("Resources")) {
-                                zip.folder("Resources");
-                            }
-    
-                            if (!zip.folder("Resources/Sprites")) {
-                                zip.folder("Resources/Sprites");
-                            }
-    
-                            // Call modifySprites to modify contents of the Sprites folder
-                            modifySprites(zip.folder("Resources/Sprites"));
-    
-                            // Generate the modified zip blob
-                            return zip.generateAsync({
-                                type: "blob"
-                            });
+    trackNumber = document.getElementById('trackNumber').value;
+    beatOffset = document.getElementById('beatOffset').value;
+    msOffset = document.getElementById('msOffset').value;
+
+    const overRideLength = document.getElementById("lengthToggle").checked;
+    const length = parseFloat(document.getElementById("length").value, 10);
+    if (overRideLength && length <= 0) {
+        alert("Length must be greater than 0.");
+        return;
+    }
+
+    if (fileInput.files.length > 0) {
+        document.getElementById('downloadButton').style.display = 'none';
+        document.getElementById('useModifiedAsInput').style.display = 'none';
+
+        const file = fileInput.files[0];
+        fileName = file.name;
+
+        JSZip.loadAsync(file) // read the content of the .riq file
+        .then(function(zip) {
+            // Check if remix.json exists in the zip
+            if (zip.file("remix.json")) {
+                return zip.file("remix.json").async("string") // Read the remix.json content
+                    .then(function(data) {
+                        // Parse the JSON data, modify it, and replace the content
+                        const cleanedData = data.replace(/^\ufeff/, '');
+                        let remix = JSON.parse(cleanedData);
+                        remix = modifyRemix(remix);
+
+                        // Replace the old remix.json with the modified one
+                        zip.file("remix.json", JSON.stringify(remix, null, 4));
+
+                        // Ensure Resources/Sprites folders exist
+                        if (!zip.folder("Resources")) {
+                            zip.folder("Resources");
+                        }
+
+                        if (!zip.folder("Resources/Sprites")) {
+                            zip.folder("Resources/Sprites");
+                        }
+
+                        // Call modifySprites to modify contents of the Sprites folder
+                        modifySprites(zip.folder("Resources/Sprites"));
+
+                        // Generate the modified zip blob
+                        return zip.generateAsync({
+                            type: "blob"
                         });
-                } else {
-                    throw new Error("remix.json not found in the zip file.");
-                }
-            })
-            .then(function(content) {
-                modifiedContent = content; // Save the modified content globally
-                modifiedContent.name = `modified ${fileName}`;
-                document.getElementById('downloadButton').style.display = 'block'; // Show download button
-                document.getElementById('useModifiedAsInput').style.display = 'block';
-            })
-            .catch(function(err) {
-                alert('Error modifying the file: ' + err.message);
-                console.log(err.message);
-            });
-        } else {
-            alert('Please select a .RIQ file to upload.');
-        }
-    } catch (e) {
-        alert(errorText + e.stack)
+                    });
+            } else {
+                throw new Error("remix.json not found in the zip file.");
+            }
+        })
+        .then(function(content) {
+            modifiedContent = content; // Save the modified content globally
+            modifiedContent.name = `modified ${fileName}`;
+            document.getElementById('downloadButton').style.display = 'block'; // Show download button
+            document.getElementById('useModifiedAsInput').style.display = 'block';
+        })
+        .catch(function(err) {
+            alert('Error modifying the file: ' + err.message);
+            console.log(err.message);
+        });
+    } else {
+        alert('Please select a .RIQ file to upload.');
     }
 }
 
@@ -658,7 +660,7 @@ document.getElementById('videoInput').addEventListener('change', async function(
     }
 });
 
-document.getElementById('applyChangesButton').addEventListener('click', async () => {
+document.getElementById('applyChangesButton').addEventListener('click', async () => { //UNUSED
     try {
         if (document.getElementById('loadingIndicator').style.display == 'block') {
             alert("Please wait for the previous operation to complete.");
@@ -1001,18 +1003,29 @@ async function extractFramesAsPNGs(file, targetWidth, targetHeight, fps, chromaK
   const diffCtx = diffCanvas.getContext('2d', { willReadFrequently: true });
 
   // Subsampled + early-exit pixel difference
-  function diffScoreSubsampled(a, b, step = 4, stopAt = Infinity) {
-    let sum = 0;
-    const len = a.length;
-    for (let i = 0; i < len; i += 4 * step) {
-      const dr = a[i]   - b[i];
-      const dg = a[i+1] - b[i+1];
-      const db = a[i+2] - b[i+2];
-      sum += (dr*dr*0.2126 + dg*dg*0.7152 + db*db*0.0722);
-      if (sum > stopAt) return sum; // early exit
-    }
-    return sum;
+// Replace your diffScoreSubsampled with this:
+function diffScoreSubsampled(a, b, step = 4, stopAt = Infinity) {
+  let sum = 0;
+  let samples = 0;
+  const len = a.length;
+
+  // sample every `step` pixels, RGB only (skip alpha)
+  for (let i = 0; i < len; i += 4 * step) {
+    const dr = Math.abs(a[i]   - b[i]);
+    const dg = Math.abs(a[i+1] - b[i+1]);
+    const db = Math.abs(a[i+2] - b[i+2]);
+
+    // average per-pixel absolute difference in [0..1]
+    // (dr+dg+db) max is 765; divide by 765
+    sum += (dr + dg + db) / 765;
+    samples++;
+
+    // early exit when mean so far already exceeds threshold
+    if (sum / samples > stopAt) return sum / samples;
   }
+  return samples ? (sum / samples) : 0;
+}
+
 
   const inputThreshold = parseFloat(dtInput.value, 10);
   const differenceThreshold = (!isNaN(inputThreshold) ? inputThreshold / 100 : 0.001);
@@ -1059,11 +1072,11 @@ async function extractFramesAsPNGs(file, targetWidth, targetHeight, fps, chromaK
     const checkLast = Math.min(MAX_CHECK_LAST, raw);
     const start = Math.max(0, uniqueImageDataList.length - checkLast);
 
-    const stopAt = differenceThreshold * diffImageData.length; // heuristic
+    const stopAt = differenceThreshold; // heuristic
 
     for (let i = start; i < uniqueImageDataList.length; i++) {
-      const score = diffScoreSubsampled(diffImageData, uniqueImageDataList[i], 4, stopAt);
-      if (score < differenceThreshold) return i;
+        const score = diffScoreSubsampled(diffImageData, uniqueImageDataList[i], 4, stopAt);
+        if (score < differenceThreshold) return i;
     }
     return -1;
   }
@@ -1386,6 +1399,18 @@ document.getElementById("extractFramesButton").addEventListener("click", () => {
             alert("Please select a video file.");
             return;
         }
+
+        if (fps <= 0) {
+            alert("FPS must be greater than 0.");
+            return;
+        }
+        const inputThreshold = parseFloat(dtInput.value, 10);
+        const differenceThreshold = (!isNaN(inputThreshold) ? inputThreshold / 100 : 0.001);
+        if (differenceThreshold >= 1) {
+            alert("Difference threshold must be less than 100.");
+            return;
+        }
+        
 
         document.getElementById('loadingIndicator').style.display = 'block';
 
