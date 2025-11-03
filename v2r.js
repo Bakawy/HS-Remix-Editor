@@ -480,6 +480,10 @@ function loadAndModifyRIQ(fileInput = "none") {
         alert("Length must be greater than 0.");
         return;
     }
+    if (tempEntities.length == 0) {
+        alert("No video to add. Please press Que frames first.");
+        return;
+    }
 
     if (fileInput.files.length > 0) {
         document.getElementById('downloadButton').style.display = 'none';
